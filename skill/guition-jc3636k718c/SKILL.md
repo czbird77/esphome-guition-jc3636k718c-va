@@ -113,7 +113,7 @@ microSD (SD_MMC):        CLK=39 CMD=38 D0=40 D1=41 D2=48 D3=47
     `on_client_connected`/`on_client_disconnected` and around the VA lifecycle.
 
 11. **Debugging:** API has no encryption here → stream logs with
-    `python esplog.py <seconds>` (set the device host in the script). Don't reflash
+    `python scripts/esplog.py <seconds>` (set the device host in the script). Don't reflash
     blind - check logs / HA state first.
 
 ## Architecture of this repo's `guition-va.yaml` (for edits)
