@@ -6,7 +6,7 @@ esphome:
   on_boot:
     - priority: 660
       then:
-        - lambda: 'id(g_order)[id(g_order_n)++] = 4;'   # register after clock/player/timer/cars
+        - lambda: 'id(g_present)[4] = true;'   # register after clock/player/timer/cars
     - priority: 650
       then:
         # shared "Games" settings entry (reset scores) - added once if any game is present

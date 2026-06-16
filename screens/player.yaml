@@ -6,7 +6,7 @@ esphome:
   on_boot:
     - priority: 690
       then:
-        - lambda: 'id(g_order)[id(g_order_n)++] = 1;'   # register after clock
+        - lambda: 'id(g_present)[1] = true;'   # register after clock
 
 globals:
   - id: g_last_pic

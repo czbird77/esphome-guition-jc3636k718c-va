@@ -6,7 +6,7 @@ esphome:
   on_boot:
     - priority: 670
       then:
-        - lambda: 'id(g_order)[id(g_order_n)++] = 3;'   # register after clock/player/timer
+        - lambda: 'id(g_present)[3] = true;'   # register after clock/player/timer
     - priority: 650
       then:
         # shared "Games" settings entry (reset scores) - added once if any game is present
