@@ -11,9 +11,11 @@ It started as "my kid needs a physical timer" and turned into a whole puck. 🙂
 
 ## Demo
 
-<video src="https://github.com/MichalZaniewicz/esphome-guition-jc3636k718c-va/raw/main/assets/demo.mp4" controls muted width="360"></video>
+<!-- To embed an inline player: edit this file on GitHub (pencil), click on the empty
+     line below, then drag assets/demo.mp4 into the editor. GitHub uploads it and inserts
+     a user-attachments URL that renders as a video player. Then commit. -->
 
-(If the player does not load, [download demo.mp4](assets/demo.mp4).)
+[Watch the demo video (full quality, with sound)](assets/demo.mp4)
 
 ## What it does
 
