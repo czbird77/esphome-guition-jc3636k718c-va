@@ -636,7 +636,7 @@ script:
   # Apply the dynamically-built settings list to the roller (called once at boot).
   - id: settings_build
     then:
-      - lambda: 'lv_roller_set_options(id(settings_roller), id(g_set_labels).c_str(), LV_ROLLER_MODE_NORMAL);'
+      - lambda: 'lv_roller_set_options(id(settings_roller)->obj, id(g_set_labels).c_str(), LV_ROLLER_MODE_NORMAL);'
   # Draws the battery indicator on the home screen. Charging: lightning bolt + green +
   # "filling" animation (icon cycles empty→full). On battery: static level icon.
   - id: batt_render
