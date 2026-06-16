@@ -11,9 +11,9 @@ It started as "my kid needs a physical timer" and turned into a whole puck. 🙂
 
 ## Demo
 
-https://github.com/MichalZaniewicz/esphome-guition-jc3636k718c-va/raw/main/demo.mp4
+<video src="https://github.com/MichalZaniewicz/esphome-guition-jc3636k718c-va/raw/main/assets/demo.mp4" controls muted width="360"></video>
 
-(If the player does not load, [download demo.mp4](demo.mp4).)
+(If the player does not load, [download demo.mp4](assets/demo.mp4).)
 
 ## What it does
 
