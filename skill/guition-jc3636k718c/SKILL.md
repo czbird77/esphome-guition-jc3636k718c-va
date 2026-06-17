@@ -116,15 +116,41 @@ microSD (SD_MMC):        CLK=39 CMD=38 D0=40 D1=41 D2=48 D3=47
     `python scripts/esplog.py <seconds>` (set the device host in the script). Don't reflash
     blind - check logs / HA state first.
 
-## Architecture of this repo's `base/core.yaml` (for edits)
+12. **Timezone resets to UTC at runtime.** The `homeassistant` time platform syncs the epoch
+    but **not** the zone, so set `timezone:` explicitly (IANA, e.g. `Europe/Warsaw`). Worse,
+    ESPHome can reset the device TZ back to UTC mid-run (on a menu restart, or when a log/API
+    client reconnects), so the clock reads UTC until the next sync. Self-heal: capture the
+    resolved POSIX zone at boot via `getenv("TZ")` into a global, then re-apply it every second
+    with `setenv("TZ", g.c_str(), 1); tzset();`. Note `RealTimeClock` has `set_timezone()` but
+    **no `get_timezone()`**, and passing the IANA name at runtime won't work (newlib needs the
+    POSIX string) - which is why you read it back from the env.
 
-- Single big file. UI is **LVGL pages** (not a top_layer overlay for modes):
+13. **OTA rollback reverts to the OLD firmware after a quick restart.** On esp-idf the bootloader
+    keeps a freshly-OTA'd image only once the boot is marked "good" (`safe_mode`, default ~1 min).
+    Restarting (e.g. from the on-screen menu) before that rolls back to the previous build - which
+    looks exactly like "my changes didn't stick". Fix: add a `safe_mode:` block and call
+    `safe_mode.mark_successful` once the device is clearly up (this repo does it when the boot
+    splash ends), and/or lower `boot_is_good_after`.
+
+14. **`${substitution}` inside a flow-mapping `{ }` breaks the YAML parse.** The `}` that closes
+    `${...}` is read as the end of the flow map, e.g. `image: { id: x, src: avatar${n} }` fails
+    with "expected ',' or '}'". Use **block** style for any line whose value contains a `${...}`.
+
+## Architecture of this repo (for edits)
+
+- **Modular.** `base/core.yaml` is the always-on core (clock, control tiles, settings,
+  LED ring, voice). Optional screens are separate packages under `base/screens/*.yaml`,
+  pulled via a remote `packages:` block in the thin user config (`guition-va.yaml`). A
+  screen self-registers into the carousel (`g_present[id]`) and declares its own settings
+  (the `g_wgrp_*`/`g_wopt_*` Widgets registry), so adding one does not touch the core.
+- UI is **LVGL pages** (not a top_layer overlay for modes): `page_boot` (startup splash),
   `page_home`, `page_player`, `page_mode` (menu/timer/alarm/settings sub-screens),
-  `page_settings`, `page_timer`, `page_controls`, `page_game`, `page_game2`.
+  `page_settings`, `page_timer`, `page_controls`, plus one page per optional screen.
 - A **mode state machine** in `g_mode` drives `page_mode`; gestures are classified in
   `touchscreen.on_release` (swipe/tap/hold) and routed by a snapshot `g_mode0`.
-- A **base carousel** `g_base` (clock / player / timer / car game / space game) on
-  horizontal swipes.
+- A **base carousel** `g_base` (clock / player / timer / games / weather / thermostat /
+  sensors / demo, in `screen_order`) on horizontal swipes; the knob drives per-screen
+  actions when a screen captures it (`g_knob_capture`).
 - The **LED ring** is one HA light + reaction effects (`Listen`/`Think`/`Speak`/
   `Volume`/`Alarm`/`Timer`) chosen by `ring_update` with priority
   alarm > assistant > volume > timer > HA, snapshotting/restoring HA state.
