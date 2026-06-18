@@ -12,11 +12,11 @@
 substitutions:
   name: voice-knob
   friendly_name: "Voice Knob"
-  # Clock timezone. HA does not push its zone to the device, so set yours here. Prefer a POSIX TZ
-  # string (the device has no IANA database; an IANA name like "Europe/Warsaw" relies on a
-  # compile-time conversion that fails on some build hosts and leaves the clock on UTC). Warsaw
-  # shown; find yours at https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv . DST auto.
-  timezone: "CET-1CEST,M3.5.0,M10.5.0/3"
+  # Clock timezone. HA does not push its zone to the device, so set yours here. Use a friendly IANA
+  # name (e.g. Europe/Warsaw, America/New_York) - core maps the common ones to the POSIX form the
+  # device needs (it has no IANA database). For a zone not in that table, paste its POSIX string
+  # instead (see https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv). DST automatic.
+  timezone: "Europe/Warsaw"
   # For album art: base URL of your HA + the media_player entity (change if different)
   ha_base_url: "http://homeassistant.local:8123"
   player_entity: media_player.voice_knob_player
@@ -173,19 +173,67 @@ esphome:
       then:
         - light.turn_on: { id: ring_light, effect: "Rainbow", brightness: 55% }   # boot splash: spin the ring while "HELLO!" shows (turned off when the splash ends)
         - lambda: |-
-            // The device has no IANA tz database, so the clock needs a POSIX TZ string. If the
-            // `timezone` substitution is already POSIX (e.g. "CET-1CEST,M3.5.0,M10.5.0/3"), take it
-            // verbatim and force it into the environment - on some builds the homeassistant time
-            // platform never applies the zone and the clock is stuck on UTC. If it is an IANA name
-            // (contains '/'), trust whatever the time component resolved into TZ. The 1s interval
-            // re-applies g_tz_posix so a runtime reset to UTC can't stick.
+            // The device has no IANA tz database, so the clock needs a POSIX TZ string. To keep the
+            // `timezone` substitution friendly, map common IANA names -> POSIX here and force the
+            // result into the environment ourselves (on some builds the homeassistant time platform
+            // never applies the zone and the clock sticks on UTC). An explicit POSIX string is used
+            // as-is; an IANA name not in the table falls back to whatever the time platform resolved.
+            // The 1s interval re-applies g_tz_posix so a runtime reset to UTC can't stick.
+            static const char* TZMAP[][2] = {
+              {"Europe/Warsaw","CET-1CEST,M3.5.0,M10.5.0/3"},
+              {"Europe/London","GMT0BST,M3.5.0/1,M10.5.0"},
+              {"Europe/Berlin","CET-1CEST,M3.5.0,M10.5.0/3"},
+              {"Europe/Paris","CET-1CEST,M3.5.0,M10.5.0/3"},
+              {"Europe/Madrid","CET-1CEST,M3.5.0,M10.5.0/3"},
+              {"Europe/Rome","CET-1CEST,M3.5.0,M10.5.0/3"},
+              {"Europe/Amsterdam","CET-1CEST,M3.5.0,M10.5.0/3"},
+              {"Europe/Brussels","CET-1CEST,M3.5.0,M10.5.0/3"},
+              {"Europe/Vienna","CET-1CEST,M3.5.0,M10.5.0/3"},
+              {"Europe/Prague","CET-1CEST,M3.5.0,M10.5.0/3"},
+              {"Europe/Zurich","CET-1CEST,M3.5.0,M10.5.0/3"},
+              {"Europe/Copenhagen","CET-1CEST,M3.5.0,M10.5.0/3"},
+              {"Europe/Stockholm","CET-1CEST,M3.5.0,M10.5.0/3"},
+              {"Europe/Oslo","CET-1CEST,M3.5.0,M10.5.0/3"},
+              {"Europe/Budapest","CET-1CEST,M3.5.0,M10.5.0/3"},
+              {"Europe/Lisbon","WET0WEST,M3.5.0/1,M10.5.0"},
+              {"Europe/Athens","EET-2EEST,M3.5.0/3,M10.5.0/4"},
+              {"Europe/Helsinki","EET-2EEST,M3.5.0/3,M10.5.0/4"},
+              {"Europe/Bucharest","EET-2EEST,M3.5.0/3,M10.5.0/4"},
+              {"Europe/Sofia","EET-2EEST,M3.5.0/3,M10.5.0/4"},
+              {"Europe/Kyiv","EET-2EEST,M3.5.0/3,M10.5.0/4"},
+              {"Europe/Moscow","MSK-3"},
+              {"Europe/Istanbul","<+03>-3"},
+              {"Europe/Dublin","IST-1GMT0,M10.5.0,M3.5.0/1"},
+              {"America/New_York","EST5EDT,M3.2.0,M11.1.0"},
+              {"America/Chicago","CST6CDT,M3.2.0,M11.1.0"},
+              {"America/Denver","MST7MDT,M3.2.0,M11.1.0"},
+              {"America/Los_Angeles","PST8PDT,M3.2.0,M11.1.0"},
+              {"America/Phoenix","MST7"},
+              {"America/Toronto","EST5EDT,M3.2.0,M11.1.0"},
+              {"America/Sao_Paulo","<-03>3"},
+              {"America/Mexico_City","CST6"},
+              {"Asia/Tokyo","JST-9"},
+              {"Asia/Shanghai","CST-8"},
+              {"Asia/Hong_Kong","HKT-8"},
+              {"Asia/Singapore","<+08>-8"},
+              {"Asia/Dubai","<+04>-4"},
+              {"Asia/Kolkata","IST-5:30"},
+              {"Asia/Seoul","KST-9"},
+              {"Asia/Jerusalem","IST-2IDT,M3.4.4/26,M10.5.0"},
+              {"Australia/Sydney","AEST-10AEDT,M10.1.0,M4.1.0/3"},
+              {"Australia/Perth","AWST-8"},
+              {"Pacific/Auckland","NZST-12NZDT,M9.5.0,M4.1.0/3"},
+              {"UTC","UTC0"},
+            };
             std::string cfg = "${timezone}";
-            if (!cfg.empty() && cfg.find('/') == std::string::npos) {
-              id(g_tz_posix) = cfg;
-            } else {
-              const char* tz = getenv("TZ"); if (tz && tz[0]) id(g_tz_posix) = tz;
+            std::string tz = cfg;
+            bool found = false;
+            for (auto &e : TZMAP) if (cfg == e[0]) { tz = e[1]; found = true; break; }
+            if (!found && cfg.find('/') != std::string::npos) {
+              const char* en = getenv("TZ"); if (en && en[0]) tz = en;   // unknown IANA -> platform's resolved zone
             }
-            if (!id(g_tz_posix).empty()) { setenv("TZ", id(g_tz_posix).c_str(), 1); tzset(); }
+            id(g_tz_posix) = tz;
+            if (!tz.empty()) { setenv("TZ", tz.c_str(), 1); tzset(); }
         - script.execute: night_apply    # brightness per g_bright / night mode
         - script.execute: disp_apply     # show/hide weather + temp/humidity per settings
         - script.execute: settings_build # push the dynamic settings list into the roller
