@@ -329,7 +329,7 @@ script:
       - if:   # GAME OVER
           condition: {{ lambda: 'return id(g_sn_state) == 2;' }}
           then:
-            - lvgl.widget.show: sn_field
+            - lvgl.widget.show: sn_logo
             - lvgl.widget.show: lbl_sn_over
             - lvgl.widget.show: lbl_sn_rec
             - lvgl.widget.show: btn_sn_replay
@@ -339,7 +339,6 @@ script:
       - if:   # HOW TO PLAY
           condition: {{ lambda: 'return id(g_sn_state) == 3;' }}
           then:
-            - lvgl.widget.show: sn_field
             - lvgl.widget.show: lbl_sn_howto_t
             - lvgl.widget.show: sn_b1
             - lvgl.widget.show: sn_b2
@@ -353,7 +352,6 @@ script:
       - if:   # SCORES (top 10)
           condition: {{ lambda: 'return id(g_sn_state) == 4;' }}
           then:
-            - lvgl.widget.show: sn_field
             - lvgl.widget.show: lbl_sn_scores_t
             - lvgl.widget.show: lbl_sn_scores1
             - lvgl.widget.show: lbl_sn_scores2
