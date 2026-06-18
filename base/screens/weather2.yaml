@@ -209,18 +209,7 @@ script:
       - lvgl.label.update:  { id: wx2_d5, text: !lambda 'return id(g_wx_n) > 5 ? id(g_wx_icon)[5] : std::string("");' }
       - lvgl.widget.update: { id: wx2_d6, hidden: !lambda 'return 6 >= id(g_wx_n);', x: !lambda 'int n=id(g_wx_n); if(n<1)n=1; return (int) lroundf(140.0f * sinf(6 * 6.2831853f / n));', y: !lambda 'int n=id(g_wx_n); if(n<1)n=1; return (int) lroundf(-140.0f * cosf(6 * 6.2831853f / n));' }
       - lvgl.label.update:  { id: wx2_d6, text: !lambda 'return id(g_wx_n) > 6 ? id(g_wx_icon)[6] : std::string("");' }
-      # --- colours by condition: background + hero glyph + glow (static hex, instant; masked by dim-dip) ---
-      - lvgl.widget.update: { id: wx2_bg, bg_color: 0x141A2E }
-      - lvgl.label.update:  { id: wx2_bigicon, text_color: 0x9FC7BE }
-      - lvgl.widget.update: { id: wx2_glow, bg_color: 0x9FC7BE }
-      - if: { condition: { lambda: 'return id(g_wx2_sel) == "sunny";' }, then: [ lvgl.widget.update: { id: wx2_bg, bg_color: 0x2E2410 }, lvgl.label.update: { id: wx2_bigicon, text_color: 0xFFC247 }, lvgl.widget.update: { id: wx2_glow, bg_color: 0xFFC247 } ] }
-      - if: { condition: { lambda: 'return id(g_wx2_sel) == "clear-night";' }, then: [ lvgl.widget.update: { id: wx2_bg, bg_color: 0x12183A }, lvgl.label.update: { id: wx2_bigicon, text_color: 0xBCD0FF }, lvgl.widget.update: { id: wx2_glow, bg_color: 0xBCD0FF } ] }
-      - if: { condition: { lambda: 'return id(g_wx2_sel) == "partlycloudy";' }, then: [ lvgl.widget.update: { id: wx2_bg, bg_color: 0x1C2838 }, lvgl.label.update: { id: wx2_bigicon, text_color: 0xCAD6E8 }, lvgl.widget.update: { id: wx2_glow, bg_color: 0xCAD6E8 } ] }
-      - if: { condition: { lambda: 'return id(g_wx2_sel) == "cloudy" || id(g_wx2_sel) == "fog";' }, then: [ lvgl.widget.update: { id: wx2_bg, bg_color: 0x222730 }, lvgl.label.update: { id: wx2_bigicon, text_color: 0xB7C0CC }, lvgl.widget.update: { id: wx2_glow, bg_color: 0xB7C0CC } ] }
-      - if: { condition: { lambda: 'return id(g_wx2_sel) == "rainy" || id(g_wx2_sel) == "pouring";' }, then: [ lvgl.widget.update: { id: wx2_bg, bg_color: 0x122B42 }, lvgl.label.update: { id: wx2_bigicon, text_color: 0x5AA6FF }, lvgl.widget.update: { id: wx2_glow, bg_color: 0x5AA6FF } ] }
-      - if: { condition: { lambda: 'return id(g_wx2_sel) == "lightning" || id(g_wx2_sel) == "lightning-rainy";' }, then: [ lvgl.widget.update: { id: wx2_bg, bg_color: 0x241A3E }, lvgl.label.update: { id: wx2_bigicon, text_color: 0xB08CFF }, lvgl.widget.update: { id: wx2_glow, bg_color: 0xB08CFF } ] }
-      - if: { condition: { lambda: 'return id(g_wx2_sel) == "snowy" || id(g_wx2_sel) == "snowy-rainy" || id(g_wx2_sel) == "hail";' }, then: [ lvgl.widget.update: { id: wx2_bg, bg_color: 0x222E44 }, lvgl.label.update: { id: wx2_bigicon, text_color: 0xEAF2FF }, lvgl.widget.update: { id: wx2_glow, bg_color: 0xEAF2FF } ] }
-      - if: { condition: { lambda: 'return id(g_wx2_sel) == "windy" || id(g_wx2_sel) == "windy-variant";' }, then: [ lvgl.widget.update: { id: wx2_bg, bg_color: 0x18302A }, lvgl.label.update: { id: wx2_bigicon, text_color: 0x8FE0C8 }, lvgl.widget.update: { id: wx2_glow, bg_color: 0x8FE0C8 } ] }
+      # colours are fixed to the partly-cloudy palette (set in the widget declarations) - no per-condition change
       # temperature colour by value (C)
       - lvgl.label.update: { id: wx2_temp, text_color: 0xFFFFFF }
       - if: { condition: { lambda: 'return id(g_wx2_tc) > -100 && id(g_wx2_tc) <= 0;' },  then: [ lvgl.label.update: { id: wx2_temp, text_color: 0x7FB2FF } ] }
@@ -251,7 +240,6 @@ interval:
                 int mx = (id(g_wx_n) > 0) ? id(g_wx_n) - 1 : 0;
                 if (id(g_wx_day) < 0) id(g_wx_day) = 0;
                 if (id(g_wx_day) > mx) id(g_wx_day) = mx;
-                id(g_wx2_dim) = 5;                    // trigger the dim-dip
             - script.execute: wx2_render
   # smooth motion: slide the glow toward the selected day + ramp the dim-dip down (30ms)
   - interval: 30ms
@@ -288,9 +276,9 @@ lvgl:
     - id: page_weather2
       bg_color: 0x0B1020
       widgets:
-        - obj: { id: wx2_bg, align: CENTER, x: 0, y: 0, width: 360, height: 360, radius: 0, bg_color: 0x141A2E, bg_opa: COVER, border_width: 0 }
+        - obj: { id: wx2_bg, align: CENTER, x: 0, y: 0, width: 360, height: 360, radius: 0, bg_color: 0x1C2838, bg_opa: COVER, border_width: 0 }
         # soft glow behind the selected day (no align - slid via lv_obj_set_pos)
-        - obj: { id: wx2_glow, x: 152, y: 12, width: 56, height: 56, radius: 28, bg_color: 0x9FC7BE, bg_opa: 30%, border_width: 0, hidden: true }
+        - obj: { id: wx2_glow, x: 152, y: 12, width: 56, height: 56, radius: 28, bg_color: 0xCAD6E8, bg_opa: 30%, border_width: 0, hidden: true }
         # rim day icons
         - label: { id: wx2_d0, align: CENTER, x: 0, y: 0, text: "", text_font: icons_wx, text_color: 0xDCE6F2, hidden: true }
         - label: { id: wx2_d1, align: CENTER, x: 0, y: 0, text: "", text_font: icons_wx, text_color: 0xDCE6F2, hidden: true }
@@ -302,7 +290,7 @@ lvgl:
         # centre hero: animated icons (sunny/partly) OR static glyph (others)
         - animimg: { id: wx2_a_sun, align: CENTER, x: 0, y: -58, duration: 800ms, repeat_count: 65535, auto_start: false, hidden: true, src: [ img_wx_sun0, img_wx_sun1, img_wx_sun2, img_wx_sun3, img_wx_sun4, img_wx_sun5, img_wx_sun6, img_wx_sun7 ] }
         - animimg: { id: wx2_a_partly, align: CENTER, x: 0, y: -58, duration: 800ms, repeat_count: 65535, auto_start: false, hidden: true, src: [ img_wx_partly0, img_wx_partly1, img_wx_partly2, img_wx_partly3, img_wx_partly4, img_wx_partly5, img_wx_partly6, img_wx_partly7 ] }
-        - label: { id: wx2_bigicon, align: CENTER, x: 0, y: -58, text: "", text_font: icons_wx_big, text_color: 0x9FC7BE, hidden: true }
+        - label: { id: wx2_bigicon, align: CENTER, x: 0, y: -58, text: "", text_font: icons_wx_big, text_color: 0xCAD6E8, hidden: true }
         - label: { id: wx2_day, align: CENTER, x: 0, y: -10, text: "", text_font: font_artist, text_color: 0x9AA6B2 }
         - label: { id: wx2_temp, align: CENTER, x: 0, y: 24, text: "--", text_font: montserrat_34, text_color: 0xFFFFFF }
         - label: { id: wx2_cond, align: CENTER, x: 0, y: 62, text: "", text_font: font_med, text_color: 0xCFE0F2 }
