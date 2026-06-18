@@ -237,7 +237,7 @@ script:
             if (s == "Sun") return std::string("SUNDAY");
             return s;
       - lvgl.label.update:
-          id: wx_temp
+          id: wx_htemp
           text: !lambda |-
             int d = id(g_wx_day);
             bool f = id(g_wx_fahrenheit);
@@ -285,12 +285,12 @@ script:
 {dispatch_show()}
       - lvgl.widget.update: {{ id: wx_glow, hidden: !lambda 'return id(g_wx_n) <= 0;' }}
 {rim_updates()}
-      - lvgl.label.update: {{ id: wx_temp, text_color: 0xFFFFFF }}
-      - if: {{ condition: {{ lambda: 'return id(g_wx_tc) > -100 && id(g_wx_tc) <= 0;' }},  then: [ lvgl.label.update: {{ id: wx_temp, text_color: 0x7FB2FF }} ] }}
-      - if: {{ condition: {{ lambda: 'return id(g_wx_tc) > 0 && id(g_wx_tc) < 10;' }},     then: [ lvgl.label.update: {{ id: wx_temp, text_color: 0x6FD0E8 }} ] }}
-      - if: {{ condition: {{ lambda: 'return id(g_wx_tc) >= 10 && id(g_wx_tc) < 18;' }},   then: [ lvgl.label.update: {{ id: wx_temp, text_color: 0x7FE6B0 }} ] }}
-      - if: {{ condition: {{ lambda: 'return id(g_wx_tc) >= 18 && id(g_wx_tc) < 25;' }},   then: [ lvgl.label.update: {{ id: wx_temp, text_color: 0xFFD061 }} ] }}
-      - if: {{ condition: {{ lambda: 'return id(g_wx_tc) >= 25;' }},                       then: [ lvgl.label.update: {{ id: wx_temp, text_color: 0xFF7A4D }} ] }}
+      - lvgl.label.update: {{ id: wx_htemp, text_color: 0xFFFFFF }}
+      - if: {{ condition: {{ lambda: 'return id(g_wx_tc) > -100 && id(g_wx_tc) <= 0;' }},  then: [ lvgl.label.update: {{ id: wx_htemp, text_color: 0x7FB2FF }} ] }}
+      - if: {{ condition: {{ lambda: 'return id(g_wx_tc) > 0 && id(g_wx_tc) < 10;' }},     then: [ lvgl.label.update: {{ id: wx_htemp, text_color: 0x6FD0E8 }} ] }}
+      - if: {{ condition: {{ lambda: 'return id(g_wx_tc) >= 10 && id(g_wx_tc) < 18;' }},   then: [ lvgl.label.update: {{ id: wx_htemp, text_color: 0x7FE6B0 }} ] }}
+      - if: {{ condition: {{ lambda: 'return id(g_wx_tc) >= 18 && id(g_wx_tc) < 25;' }},   then: [ lvgl.label.update: {{ id: wx_htemp, text_color: 0xFFD061 }} ] }}
+      - if: {{ condition: {{ lambda: 'return id(g_wx_tc) >= 25;' }},                       then: [ lvgl.label.update: {{ id: wx_htemp, text_color: 0xFF7A4D }} ] }}
 {SENSORS}
 interval:
   - interval: 50ms
@@ -342,7 +342,7 @@ lvgl:
 {rim_widgets()}
 {animimg_widgets()}
         - label: {{ id: wx_day, align: CENTER, x: 0, y: -10, text: "", text_font: font_artist, text_color: {ACCENT} }}
-        - label: {{ id: wx_temp, align: CENTER, x: 0, y: 24, text: "--", text_font: montserrat_34, text_color: 0xFFFFFF }}
+        - label: {{ id: wx_htemp, align: CENTER, x: 0, y: 24, text: "--", text_font: montserrat_34, text_color: 0xFFFFFF }}
         - label: {{ id: wx_cond, align: CENTER, x: 0, y: 62, text: "", text_font: font_med, text_color: {CONDC} }}
 """
 

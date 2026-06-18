@@ -327,7 +327,7 @@ script:
             if (s == "Sun") return std::string("SUNDAY");
             return s;
       - lvgl.label.update:
-          id: wx_temp
+          id: wx_htemp
           text: !lambda |-
             int d = id(g_wx_day);
             bool f = id(g_wx_fahrenheit);
@@ -407,12 +407,12 @@ script:
       - lvgl.label.update:  { id: wx_d5, text: !lambda 'return id(g_wx_n) > 5 ? id(g_wx_icon)[5] : std::string("");' }
       - lvgl.widget.update: { id: wx_d6, hidden: !lambda 'return 6 >= id(g_wx_n);', x: !lambda 'int n=id(g_wx_n); if(n<1)n=1; return (int) lroundf(140.0f * sinf(6 * 6.2831853f / n));', y: !lambda 'int n=id(g_wx_n); if(n<1)n=1; return (int) lroundf(-140.0f * cosf(6 * 6.2831853f / n));' }
       - lvgl.label.update:  { id: wx_d6, text: !lambda 'return id(g_wx_n) > 6 ? id(g_wx_icon)[6] : std::string("");' }
-      - lvgl.label.update: { id: wx_temp, text_color: 0xFFFFFF }
-      - if: { condition: { lambda: 'return id(g_wx_tc) > -100 && id(g_wx_tc) <= 0;' },  then: [ lvgl.label.update: { id: wx_temp, text_color: 0x7FB2FF } ] }
-      - if: { condition: { lambda: 'return id(g_wx_tc) > 0 && id(g_wx_tc) < 10;' },     then: [ lvgl.label.update: { id: wx_temp, text_color: 0x6FD0E8 } ] }
-      - if: { condition: { lambda: 'return id(g_wx_tc) >= 10 && id(g_wx_tc) < 18;' },   then: [ lvgl.label.update: { id: wx_temp, text_color: 0x7FE6B0 } ] }
-      - if: { condition: { lambda: 'return id(g_wx_tc) >= 18 && id(g_wx_tc) < 25;' },   then: [ lvgl.label.update: { id: wx_temp, text_color: 0xFFD061 } ] }
-      - if: { condition: { lambda: 'return id(g_wx_tc) >= 25;' },                       then: [ lvgl.label.update: { id: wx_temp, text_color: 0xFF7A4D } ] }
+      - lvgl.label.update: { id: wx_htemp, text_color: 0xFFFFFF }
+      - if: { condition: { lambda: 'return id(g_wx_tc) > -100 && id(g_wx_tc) <= 0;' },  then: [ lvgl.label.update: { id: wx_htemp, text_color: 0x7FB2FF } ] }
+      - if: { condition: { lambda: 'return id(g_wx_tc) > 0 && id(g_wx_tc) < 10;' },     then: [ lvgl.label.update: { id: wx_htemp, text_color: 0x6FD0E8 } ] }
+      - if: { condition: { lambda: 'return id(g_wx_tc) >= 10 && id(g_wx_tc) < 18;' },   then: [ lvgl.label.update: { id: wx_htemp, text_color: 0x7FE6B0 } ] }
+      - if: { condition: { lambda: 'return id(g_wx_tc) >= 18 && id(g_wx_tc) < 25;' },   then: [ lvgl.label.update: { id: wx_htemp, text_color: 0xFFD061 } ] }
+      - if: { condition: { lambda: 'return id(g_wx_tc) >= 25;' },                       then: [ lvgl.label.update: { id: wx_htemp, text_color: 0xFF7A4D } ] }
 
 sensor:
   - platform: homeassistant
@@ -536,5 +536,5 @@ lvgl:
         - animimg: { id: wx_a_storm, align: CENTER, x: 0, y: -52, duration: 1400ms, repeat_count: 65535, auto_start: false, hidden: true, src: [ img_wx_storm0, img_wx_storm1, img_wx_storm2, img_wx_storm3, img_wx_storm4, img_wx_storm5, img_wx_storm6, img_wx_storm7 ] }
         - animimg: { id: wx_a_snow, align: CENTER, x: 0, y: -52, duration: 1400ms, repeat_count: 65535, auto_start: false, hidden: true, src: [ img_wx_snow0, img_wx_snow1, img_wx_snow2, img_wx_snow3, img_wx_snow4, img_wx_snow5, img_wx_snow6, img_wx_snow7 ] }
         - label: { id: wx_day, align: CENTER, x: 0, y: -10, text: "", text_font: font_artist, text_color: 0x9AA6B2 }
-        - label: { id: wx_temp, align: CENTER, x: 0, y: 24, text: "--", text_font: montserrat_34, text_color: 0xFFFFFF }
+        - label: { id: wx_htemp, align: CENTER, x: 0, y: 24, text: "--", text_font: montserrat_34, text_color: 0xFFFFFF }
         - label: { id: wx_cond, align: CENTER, x: 0, y: 62, text: "", text_font: font_med, text_color: 0xCFE0F2 }
