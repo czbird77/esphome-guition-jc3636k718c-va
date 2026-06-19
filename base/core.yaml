@@ -2839,6 +2839,18 @@ lvgl:
     - id: page_home
       bg_color: 0x000000
       widgets:
+        - obj:   # faint outer ring for depth (matches the other screens)
+            id: home_ring_out
+            align: CENTER
+            width: 340
+            height: 340
+            radius: 170
+            bg_opa: TRANSP
+            border_width: 2
+            border_color: 0x1A1F2A
+            border_opa: 70%
+            clickable: false
+            scrollable: false
         - label:
             id: lbl_clock
             align: CENTER

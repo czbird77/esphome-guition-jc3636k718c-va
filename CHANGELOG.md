@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.2.4] - 2026-06-19
+
+### Changed
+- Sensors screen: each glance now gets its own accent colour (icon + position dots).
+- Added a faint depth ring to the Sensors, Home (Classic) and Weather screens for a consistent framed look.
+
 ## [2.2.3] - 2026-06-19
 
 ### Changed

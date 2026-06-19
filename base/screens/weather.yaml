@@ -520,6 +520,7 @@ lvgl:
       bg_color: 0x0B1020
       widgets:
         - obj: { id: wx_bg, align: CENTER, x: 0, y: 0, width: 360, height: 360, radius: 0, bg_color: 0x1C2838, bg_opa: COVER, border_width: 0 }
+        - obj: { id: wx_ring_out, align: CENTER, width: 348, height: 348, radius: 174, bg_opa: TRANSP, border_width: 2, border_color: 0x33455C, border_opa: 55%, clickable: false, scrollable: false }
         - obj: { id: wx_glow, x: 152, y: 12, width: 56, height: 56, radius: 28, bg_color: 0xCAD6E8, bg_opa: 30%, border_width: 0, hidden: true }
         - label: { id: wx_d0, align: CENTER, x: 0, y: 0, text: "", text_font: icons_wx, text_color: 0xDCE6F2, hidden: true }
         - label: { id: wx_d1, align: CENTER, x: 0, y: 0, text: "", text_font: icons_wx, text_color: 0xDCE6F2, hidden: true }
