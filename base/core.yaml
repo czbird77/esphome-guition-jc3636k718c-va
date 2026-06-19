@@ -237,12 +237,18 @@ esphome:
         - script.execute: night_apply    # brightness per g_bright / night mode
         - script.execute: disp_apply     # show/hide weather + temp/humidity per settings
         - script.execute: settings_build # push the dynamic settings list into the roller
-        - script.execute: home_roller_build  # Home roller line 3 = current watchface
-        - script.execute: face_apply     # apply the saved home watchface (Classic / Neon)
+        - lambda: 'id(g_wf_present)[0] = true; id(g_wf_name)[0] = "Classic";'   # register the built-in Classic watchface (id 0)
         - lvgl.label.update: { id: tile1_ic, text: !lambda 'return id(g_tile1_glyph);' }   # tiles get their icon glyph now (set at priority 760)
         - lvgl.label.update: { id: tile2_ic, text: !lambda 'return id(g_tile2_glyph);' }
         - lvgl.label.update: { id: tile3_ic, text: !lambda 'return id(g_tile3_glyph);' }
         - lvgl.label.update: { id: tile4_ic, text: !lambda 'return id(g_tile4_glyph);' }
+    # Watchface finalize - runs after every face package has registered (priority < 650).
+    # If the saved face isn't present (its file was removed), fall back to Classic, then build
+    # the Home settings roller line. The face itself is shown at the end of the boot splash.
+    - priority: 500
+      then:
+        - lambda: 'if (id(g_watchface) < 0 || id(g_watchface) >= 8 || !id(g_wf_present)[id(g_watchface)]) id(g_watchface) = 0;'
+        - script.execute: home_roller_build
 
 esp32:
   board: esp32-s3-devkitc-1
@@ -577,6 +583,16 @@ globals:
     type: int
     restore_value: no
     initial_value: '0'
+  - id: g_wf_present   # registry: which watchface ids exist (0=Classic in core; others self-register)
+    type: bool[8]
+    restore_value: no
+  - id: g_wf_name      # registry: display name per watchface id
+    type: std::string[8]
+    restore_value: no
+  - id: g_wf_req       # request flag: a non-Classic face self-shows its page when this is set
+    type: bool
+    restore_value: no
+    initial_value: 'false'
   - id: g_nf_glyph     # current weather MDI glyph (set when the weather state changes; reused by the Neon face)
     type: std::string
     restore_value: no
@@ -869,10 +885,12 @@ script:
   # (cars/space) show themselves via g_nav_req. g_nav_anim: 0=left 1=right 2=top 3=bottom.
   - id: show_base
     then:
-      - if: { condition: { lambda: 'return id(g_base)==0 && id(g_nav_anim)==0;' }, then: [lvgl.page.show: { id: page_home,   animation: move_left,   time: 250ms }] }
-      - if: { condition: { lambda: 'return id(g_base)==0 && id(g_nav_anim)==1;' }, then: [lvgl.page.show: { id: page_home,   animation: move_right,  time: 250ms }] }
-      - if: { condition: { lambda: 'return id(g_base)==0 && id(g_nav_anim)==2;' }, then: [lvgl.page.show: { id: page_home,   animation: move_top,    time: 250ms }] }
-      - if: { condition: { lambda: 'return id(g_base)==0 && id(g_nav_anim)==3;' }, then: [lvgl.page.show: { id: page_home,   animation: move_bottom, time: 250ms }] }
+      # Home base: Classic is core's page_home (directional); other faces self-show via g_wf_req.
+      - if: { condition: { lambda: 'return id(g_base)==0 && id(g_watchface)==0 && id(g_nav_anim)==0;' }, then: [lvgl.page.show: { id: page_home,   animation: move_left,   time: 250ms }] }
+      - if: { condition: { lambda: 'return id(g_base)==0 && id(g_watchface)==0 && id(g_nav_anim)==1;' }, then: [lvgl.page.show: { id: page_home,   animation: move_right,  time: 250ms }] }
+      - if: { condition: { lambda: 'return id(g_base)==0 && id(g_watchface)==0 && id(g_nav_anim)==2;' }, then: [lvgl.page.show: { id: page_home,   animation: move_top,    time: 250ms }] }
+      - if: { condition: { lambda: 'return id(g_base)==0 && id(g_watchface)==0 && id(g_nav_anim)==3;' }, then: [lvgl.page.show: { id: page_home,   animation: move_bottom, time: 250ms }] }
+      - if: { condition: { lambda: 'return id(g_base)==0 && id(g_watchface)!=0;' }, then: [ lambda: 'id(g_wf_req) = true;' ] }
       - if: { condition: { lambda: 'return id(g_base)==1;' }, then: [ lambda: 'id(g_nav_req) = true;' ] }
       - if: { condition: { lambda: 'return id(g_base)==2 && id(g_nav_anim)==0;' }, then: [lvgl.page.show: { id: page_timer,  animation: move_left,   time: 250ms }] }
       - if: { condition: { lambda: 'return id(g_base)==2 && id(g_nav_anim)==1;' }, then: [lvgl.page.show: { id: page_timer,  animation: move_right,  time: 250ms }] }
@@ -884,57 +902,24 @@ script:
     then:
       - lambda: 'lv_roller_set_options(id(settings_roller)->obj, id(g_set_labels).c_str(), LV_ROLLER_MODE_NORMAL);'
       - lambda: 'lv_roller_set_options(id(wid_roller)->obj, id(g_wgrp_labels).c_str(), LV_ROLLER_MODE_NORMAL);'
-  # Home watchface: show the selected face (0 = Classic, 1 = Neon). Weather/room widget
-  # visibility (on either face) is handled by disp_apply, which obeys the Display settings.
+  # Home watchface: make the active face the current home view. Classic (id 0) is core's
+  # page_home; other faces self-show their own page when g_wf_req is set. Each face owns its
+  # own weather/room visibility (classic via disp_apply; others gate themselves).
   - id: face_apply
     then:
       - if:
-          condition: { lambda: 'return id(g_watchface) == 1;' }
+          condition: { lambda: 'return id(g_watchface) == 0;' }
           then:
-            - lvgl.widget.hide: lbl_clock
-            - lvgl.widget.hide: lbl_date
-            - lvgl.widget.hide: lbl_batt
-            - lvgl.widget.show: face_neon
-            - script.execute: neon_render
+            - lvgl.page.show: { id: page_home, animation: fade_in, time: 250ms }
+            - script.execute: disp_apply
           else:
-            - lvgl.widget.hide: face_neon
-            - lvgl.widget.show: lbl_clock
-            - lvgl.widget.show: lbl_date
-            - lvgl.widget.show: lbl_batt
-      - script.execute: disp_apply
-  # Populate the Neon face widgets (called on switch + every second while it is the active face).
-  - id: neon_render
-    then:
-      - lvgl.label.update: { id: nf_hh, text: !lambda 'return id(ha_time).now().is_valid() ? id(ha_time).now().strftime("%H") : std::string("00");' }
-      - lvgl.label.update: { id: nf_mm, text: !lambda 'return id(ha_time).now().is_valid() ? id(ha_time).now().strftime("%M") : std::string("00");' }
-      - lvgl.label.update: { id: nf_wx_ic, text: !lambda 'return id(g_nf_glyph).empty() ? std::string("󰖕") : id(g_nf_glyph);' }
-      - lvgl.label.update: { id: nf_wx_cond, text: !lambda 'return id(g_nf_cond);' }
-      - lvgl.label.update:
-          id: nf_wx_temp
-          text: !lambda |-
-            if (!id(wx_temp).has_state()) return std::string("--°");
-            char b[10]; snprintf(b, sizeof(b), "%d°", (int) roundf(id(wx_temp).state)); return std::string(b);
-      - lvgl.label.update:
-          id: nf_date
-          text: !lambda |-
-            auto t = id(ha_time).now();
-            if (!t.is_valid()) return std::string("");
-            static const char* d[8] = {"","Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
-            std::string day = (t.day_of_week >= 1 && t.day_of_week <= 7) ? std::string(d[t.day_of_week]) : std::string("");
-            return t.strftime("%d %b") + "   " + day;
-      - lvgl.label.update:
-          id: nf_ct_val
-          text: !lambda 'if (!id(room_temp).has_state()) return std::string("--"); char b[12]; snprintf(b, sizeof(b), "%.1f\xC2\xB0", id(room_temp).state); return std::string(b);'
-      - lvgl.label.update:
-          id: nf_hum_val
-          text: !lambda 'if (!id(room_hum).has_state()) return std::string("--"); char b[8]; snprintf(b, sizeof(b), "%d%%", (int) roundf(id(room_hum).state)); return std::string(b);'
+            - lambda: 'id(g_wf_req) = true;'
   # Rebuild the Home settings roller so its 3rd line shows the current watchface name.
   - id: home_roller_build
     then:
       - lambda: |-
-          static const char* NAMES[2] = {"Classic", "Neon"};
-          int wf = id(g_watchface); if (wf < 0 || wf > 1) wf = 0;
-          std::string opts = std::string("Show weather\nShow climate\nWatchface: ") + NAMES[wf];
+          int wf = id(g_watchface); if (wf < 0 || wf >= 8 || !id(g_wf_present)[wf]) wf = 0;
+          std::string opts = std::string("Show weather\nShow climate\nWatchface: ") + id(g_wf_name)[wf];
           lv_roller_set_options(id(home_roller)->obj, opts.c_str(), LV_ROLLER_MODE_NORMAL);
   # Watchface picker (mode 33): update + show the overlay hint with the previewed face name.
   - id: facepick_render
@@ -942,9 +927,8 @@ script:
       - lvgl.label.update:
           id: pick_name
           text: !lambda |-
-            static const char* NAMES[2] = {"Classic", "Neon"};
-            int wf = id(g_wf_pick); if (wf < 0 || wf > 1) wf = 0;
-            std::string s = NAMES[wf];
+            int wf = id(g_wf_pick); if (wf < 0 || wf >= 8) wf = 0;
+            std::string s = id(g_wf_name)[wf];
             for (auto &c : s) { if (c >= 'a' && c <= 'z') c -= 32; }
             return s;
       - lvgl.widget.show: pick_bar
@@ -964,16 +948,13 @@ script:
             std::string ic = p > 87 ? "" : p > 62 ? "" : p > 37 ? "" : p > 12 ? "" : "";
             char bf[12]; snprintf(bf, sizeof(bf), " %d%%", p);
             return ic + bf;
-      - lambda: 'lv_label_set_text(id(nf_bt), lv_label_get_text(id(lbl_batt)));'   # mirror onto the Neon face
       - if:
           condition:
             lambda: 'return id(g_charging);'
           then:
             - lvgl.label.update: { id: lbl_batt, text_color: 0x35c759 }
-            - lvgl.label.update: { id: nf_bt, text_color: 0x35c759 }
           else:
             - lvgl.label.update: { id: lbl_batt, text_color: 0x6f9a92 }
-            - lvgl.label.update: { id: nf_bt, text_color: 0x6f9a92 }
   - id: flash_volume
     mode: restart
     then:
@@ -1367,28 +1348,16 @@ script:
       - lambda: 'id(g_timer_active) = false; id(g_timer_paused) = false; id(g_timer_secs) = 0;'
       - script.execute: timer_render
   # Shows/hides home-screen elements per Display settings
-  - id: disp_apply   # gate weather/climate widgets per settings, for whichever home face is active
+  - id: disp_apply   # gate the Classic face's weather/climate widgets per the Display settings
     then:
-      # Classic weather (only on the Classic face)
       - if:
-          condition: { lambda: 'return id(g_watchface) == 0 && id(g_show_weather);' }
+          condition: { lambda: 'return id(g_show_weather);' }
           then: [ lvgl.widget.show: lbl_wx_ic, lvgl.widget.show: lbl_wx_val ]
           else: [ lvgl.widget.hide: lbl_wx_ic, lvgl.widget.hide: lbl_wx_val ]
-      # Classic climate (only on the Classic face)
       - if:
-          condition: { lambda: 'return id(g_watchface) == 0 && id(g_show_climate);' }
+          condition: { lambda: 'return id(g_show_climate);' }
           then: [ lvgl.widget.show: lbl_ct_ic, lvgl.widget.show: lbl_ct_val, lvgl.widget.show: lbl_ch_ic, lvgl.widget.show: lbl_ch_val ]
           else: [ lvgl.widget.hide: lbl_ct_ic, lvgl.widget.hide: lbl_ct_val, lvgl.widget.hide: lbl_ch_ic, lvgl.widget.hide: lbl_ch_val ]
-      # Neon weather (only on the Neon face)
-      - if:
-          condition: { lambda: 'return id(g_watchface) == 1 && id(g_show_weather);' }
-          then: [ lvgl.widget.show: nf_wx_ic, lvgl.widget.show: nf_wx_temp, lvgl.widget.show: nf_wx_cond ]
-          else: [ lvgl.widget.hide: nf_wx_ic, lvgl.widget.hide: nf_wx_temp, lvgl.widget.hide: nf_wx_cond ]
-      # Neon climate (only on the Neon face)
-      - if:
-          condition: { lambda: 'return id(g_watchface) == 1 && id(g_show_climate);' }
-          then: [ lvgl.widget.show: nf_ct_ic, lvgl.widget.show: nf_ct_val, lvgl.widget.show: nf_hum_ic, lvgl.widget.show: nf_hum_val ]
-          else: [ lvgl.widget.hide: nf_ct_ic, lvgl.widget.hide: nf_ct_val, lvgl.widget.hide: nf_hum_ic, lvgl.widget.hide: nf_hum_val ]
   # Night mode: ON -> dim screen to 15%, OFF -> restore brightness from settings
   - id: night_apply
     then:
@@ -1547,10 +1516,10 @@ binary_sensor:
                                         else { id(g_night_to)--; if (id(g_night_to) < 0) id(g_night_to) = 23; }
                                     - script.execute: ui_render
                                   else:
-                                    - if:   # watchface picker: previous face
+                                    - if:   # watchface picker: previous present face
                                         condition: { lambda: 'return id(g_mode) == 33;' }
                                         then:
-                                          - lambda: 'id(g_wf_pick) = (id(g_wf_pick) + 1) % 2; id(g_watchface) = id(g_wf_pick);'
+                                          - lambda: 'int n=id(g_wf_pick); for(int k=0;k<8;k++){ n=(n+7)%8; if(id(g_wf_present)[n]) break; } id(g_wf_pick)=n; id(g_watchface)=n;'
                                           - script.execute: face_apply
                                           - script.execute: facepick_render
                                         else:
@@ -1616,10 +1585,10 @@ binary_sensor:
                                         else { id(g_night_to)++; if (id(g_night_to) > 23) id(g_night_to) = 0; }
                                     - script.execute: ui_render
                                   else:
-                                    - if:   # watchface picker: next face
+                                    - if:   # watchface picker: next present face
                                         condition: { lambda: 'return id(g_mode) == 33;' }
                                         then:
-                                          - lambda: 'id(g_wf_pick) = (id(g_wf_pick) + 1) % 2; id(g_watchface) = id(g_wf_pick);'
+                                          - lambda: 'int n=id(g_wf_pick); for(int k=0;k<8;k++){ n=(n+1)%8; if(id(g_wf_present)[n]) break; } id(g_wf_pick)=n; id(g_watchface)=n;'
                                           - script.execute: face_apply
                                           - script.execute: facepick_render
                                         else:
@@ -2366,11 +2335,6 @@ font:
     id: font_sel
     size: 28
     glyphsets: [GF_Latin_Core]
-  # Neon watchface: huge bold digits (only 0-9 needed, kept tiny in flash)
-  - file: { type: gfonts, family: "Roboto", weight: 900 }
-    id: font_neon
-    size: 108
-    glyphs: "0123456789"
   # Material Design icons (for the control tiles) - ESPHome downloads the TTF at compile time
   - file: "https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf"
     id: icons34
@@ -2525,7 +2489,7 @@ interval:
                   - lambda: 'id(g_boot) = false;'
                   - light.turn_off: ring_light                        # stop the boot ring animation
                   - safe_mode.mark_successful:                        # commit this OTA image now so a restart won't roll back to the old firmware
-                  - lvgl.page.show: { id: page_home, animation: fade_in, time: 400ms }
+                  - script.execute: face_apply                       # reveal the active home watchface (Classic page_home, or a face's own page)
   - interval: 2s
     then:
       - lambda: |-
@@ -2574,9 +2538,6 @@ interval:
             static const char* d[8] = {"","Su","Mo","Tu","We","Th","Fr","Sa"};
             std::string day = (t.day_of_week >= 1 && t.day_of_week <= 7) ? std::string(d[t.day_of_week]) : std::string("");
             return t.strftime("%d.%m") + "  " + day;
-      - if:   # Neon watchface: refresh its widgets while it is the active home face
-          condition: { lambda: 'return id(g_watchface) == 1 && id(g_base) == 0;' }
-          then: [ script.execute: neon_render ]
       # Screen-timer countdown (g_timer_active). From the button: local. From VA: HA calls finished, locally smooth.
       - if:
           condition:
@@ -2631,6 +2592,52 @@ lvgl:
   # Always-on-top layer: assistant overlay (dim + frame + text)
   top_layer:
     widgets:
+      # Watchface picker overlay (shown only in pick mode 33) - last so it draws on top
+      - obj:
+          id: pick_bar
+          align: BOTTOM_MID
+          y: -12
+          width: 210
+          height: 60
+          radius: 20
+          bg_color: 0x0A0E16
+          bg_opa: 82%
+          border_width: 1
+          border_color: 0xF5B83D
+          border_opa: 35%
+          pad_all: 0
+          clickable: false
+          scrollable: false
+          hidden: true
+          widgets:
+            - label:   # left chevron (turn the knob)
+                id: pick_chevl
+                align: LEFT_MID
+                x: 14
+                text: "<"
+                text_font: font_sel
+                text_color: 0x55606E
+            - label:   # right chevron
+                id: pick_chevr
+                align: RIGHT_MID
+                x: -14
+                text: ">"
+                text_font: font_sel
+                text_color: 0x55606E
+            - label:   # face name (set by facepick_render)
+                id: pick_name
+                align: CENTER
+                y: -9
+                text: ""
+                text_font: font_sel
+                text_color: 0xFFFFFF
+            - label:   # subtle hint
+                id: pick_help
+                align: CENTER
+                y: 17
+                text: "Tap to keep"
+                text_font: font_artist
+                text_color: 0x6A7280
       - obj:
           id: va_dim
           x: 0
@@ -2816,176 +2823,6 @@ lvgl:
             text_font: font_med
             text_color: 0xE8E8EA
             hidden: true
-        # ───────── NEON watchface (shown only when g_watchface == 1) ─────────
-        - obj:
-            id: face_neon
-            x: 0
-            y: 0
-            width: 360
-            height: 360
-            bg_opa: TRANSP
-            border_width: 0
-            radius: 0
-            pad_all: 0
-            scrollable: false
-            clickable: false
-            hidden: true
-            widgets:
-              - obj:   # outer neon ring at the rim
-                  id: nf_ring_out
-                  align: CENTER
-                  width: 352
-                  height: 352
-                  radius: 176
-                  bg_opa: TRANSP
-                  border_width: 4
-                  border_color: 0xFF2E88
-                  border_opa: 60%
-                  clickable: false
-                  scrollable: false
-              - obj:   # second neon ring, also hugging the rim (interior left free for content)
-                  id: nf_ring_in
-                  align: CENTER
-                  width: 320
-                  height: 320
-                  radius: 160
-                  bg_opa: TRANSP
-                  border_width: 4
-                  border_color: 0x9A5BFF
-                  border_opa: 55%
-                  clickable: false
-                  scrollable: false
-              - label:   # weather icon
-                  id: nf_wx_ic
-                  align: CENTER
-                  x: -34
-                  y: -103
-                  text: "󰖕"
-                  text_font: icons34
-                  text_color: 0xBFD2DA
-              - label:   # outdoor temperature
-                  id: nf_wx_temp
-                  align: CENTER
-                  x: 26
-                  y: -106
-                  text: "--°"
-                  text_font: font_sel
-                  text_color: 0xFFFFFF
-              - label:   # condition text (UPPERCASE)
-                  id: nf_wx_cond
-                  align: CENTER
-                  y: -76
-                  text: ""
-                  text_font: font_artist
-                  text_color: 0x8A93A0
-              - label:   # HOURS
-                  id: nf_hh
-                  align: CENTER
-                  x: -70
-                  y: -4
-                  text: "00"
-                  text_font: font_neon
-                  text_color: 0xFF2E88
-              - label:   # MINUTES
-                  id: nf_mm
-                  align: CENTER
-                  x: 70
-                  y: -4
-                  text: "00"
-                  text_font: font_neon
-                  text_color: 0x9A5BFF
-              - label:   # date
-                  id: nf_date
-                  align: CENTER
-                  y: 70
-                  text: ""
-                  text_font: font_med
-                  text_color: 0x6f9a92
-              - label:   # room temperature icon
-                  id: nf_ct_ic
-                  align: CENTER
-                  x: -60
-                  y: 99
-                  text: "󰔏"
-                  text_font: icons18
-                  text_color: 0xFF8A5C
-              - label:
-                  id: nf_ct_val
-                  align: CENTER
-                  x: -32
-                  y: 99
-                  text: "--"
-                  text_font: font_artist
-                  text_color: 0x9AA3B0
-              - label:   # room humidity icon
-                  id: nf_hum_ic
-                  align: CENTER
-                  x: 16
-                  y: 99
-                  text: "󰖎"
-                  text_font: icons18
-                  text_color: 0x3FA9D6
-              - label:
-                  id: nf_hum_val
-                  align: CENTER
-                  x: 42
-                  y: 99
-                  text: "--"
-                  text_font: font_artist
-                  text_color: 0x9AA3B0
-              - label:   # battery (glyph + %), driven by batt_render (montserrat = LVGL battery symbols)
-                  id: nf_bt
-                  align: CENTER
-                  y: 126
-                  text: ""
-                  text_font: montserrat_18
-                  text_color: 0x6f9a92
-        # Watchface picker overlay (shown only in pick mode 33) - last so it draws on top
-        - obj:
-            id: pick_bar
-            align: BOTTOM_MID
-            y: -12
-            width: 210
-            height: 60
-            radius: 20
-            bg_color: 0x0A0E16
-            bg_opa: 82%
-            border_width: 1
-            border_color: 0xF5B83D
-            border_opa: 35%
-            pad_all: 0
-            clickable: false
-            scrollable: false
-            hidden: true
-            widgets:
-              - label:   # left chevron (turn the knob)
-                  id: pick_chevl
-                  align: LEFT_MID
-                  x: 14
-                  text: "<"
-                  text_font: font_sel
-                  text_color: 0x55606E
-              - label:   # right chevron
-                  id: pick_chevr
-                  align: RIGHT_MID
-                  x: -14
-                  text: ">"
-                  text_font: font_sel
-                  text_color: 0x55606E
-              - label:   # face name (set by facepick_render)
-                  id: pick_name
-                  align: CENTER
-                  y: -9
-                  text: ""
-                  text_font: font_sel
-                  text_color: 0xFFFFFF
-              - label:   # subtle hint
-                  id: pick_help
-                  align: CENTER
-                  y: 17
-                  text: "Tap to keep"
-                  text_font: font_artist
-                  text_color: 0x6A7280
     - id: page_mode
       bg_color: 0x000000
       widgets:

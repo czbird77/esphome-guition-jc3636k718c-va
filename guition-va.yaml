@@ -93,6 +93,9 @@ packages:
       - base/screens/thermostat.yaml   # optional: thermostat (climate.* entity; knob sets target, tap on/off)
       - base/screens/sensors.yaml      # optional: sensors glance (1-6 HA entities, knob cycles)
       - base/screens/demo.yaml         # optional: commented example screen (TAP ME!) + Widgets settings
+      # Watchfaces (optional home-screen looks; Classic is built into core and always available).
+      # Comment one out to drop it; pick the active one in Settings > Home > Watchface.
+      - base/watchfaces/neon.yaml      # optional: Neon - big two-tone digits + neon rings
     refresh: 0s        # always pull the latest beta (set to e.g. 1d once it stabilizes)
 
 # Wi-Fi comes from your local secrets.yaml (the core uses !secret wifi_ssid / wifi_password).
