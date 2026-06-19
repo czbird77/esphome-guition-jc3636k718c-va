@@ -2593,14 +2593,16 @@ lvgl:
   # Always-on-top layer: assistant overlay (dim + frame + text)
   top_layer:
     widgets:
-      # Watchface picker overlay (shown only in pick mode 33) - last so it draws on top
+      # Watchface picker overlay (shown only in pick mode 33) - last so it draws on top.
+      # A bottom sheet: rounded top, square bottom pushed BELOW the screen edge (y:24 puts the
+      # bottom + its corner radius off-display), so only the straight sides reach the edge.
       - obj:
           id: pick_bar
           align: BOTTOM_MID
-          y: -12
+          y: 24
           width: 210
-          height: 60
-          radius: 20
+          height: 96
+          radius: 24
           bg_color: 0x0A0E16
           bg_opa: 82%
           border_width: 1
@@ -2613,29 +2615,31 @@ lvgl:
           widgets:
             - label:   # left chevron (turn the knob)
                 id: pick_chevl
-                align: LEFT_MID
-                x: 14
+                align: TOP_LEFT
+                x: 16
+                y: 16
                 text: "<"
                 text_font: font_sel
                 text_color: 0x55606E
             - label:   # right chevron
                 id: pick_chevr
-                align: RIGHT_MID
-                x: -14
+                align: TOP_RIGHT
+                x: -16
+                y: 16
                 text: ">"
                 text_font: font_sel
                 text_color: 0x55606E
             - label:   # face name (set by facepick_render)
                 id: pick_name
-                align: CENTER
-                y: -9
+                align: TOP_MID
+                y: 12
                 text: ""
                 text_font: font_sel
                 text_color: 0xFFFFFF
             - label:   # subtle hint
                 id: pick_help
-                align: CENTER
-                y: 17
+                align: TOP_MID
+                y: 44
                 text: "Tap to keep"
                 text_font: font_artist
                 text_color: 0x6A7280
