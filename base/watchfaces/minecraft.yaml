@@ -32,7 +32,7 @@ font:
   - file: https://raw.githubusercontent.com/MichalZaniewicz/esphome-guition-jc3636k718c-va/beta/assets/fonts/pixel-font.ttf
     id: mc_font_sm
     size: 26
-    glyphsets: [GF_Latin_Core]
+    glyphs: " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"   # date only (uppercased) - no GF_Latin_Core, avoids missing-glyph warnings
 
 image:
   - { id: img_mc_ground, file: https://raw.githubusercontent.com/MichalZaniewicz/esphome-guition-jc3636k718c-va/beta/assets/sprites/minecraft/ground.png, type: RGB565 }
