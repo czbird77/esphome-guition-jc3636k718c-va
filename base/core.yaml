@@ -1339,6 +1339,36 @@ script:
             - lvgl.widget.hide: timer_pause
             - lvgl.widget.hide: timer_stop
       - script.execute: ring_update
+      # status caption + arc/time colour by remaining: SET grey, then green > amber > red
+      - lvgl.label.update:
+          id: timer_cap
+          text: !lambda |-
+            if (!id(g_timer_active)) return std::string("SET");
+            return id(g_timer_paused) ? std::string("PAUSED") : std::string("RUNNING");
+      - if:
+          condition: { lambda: 'return !id(g_timer_active);' }
+          then:
+            - lvgl.arc.update: { id: timer_arc, indicator: { arc_color: 0x2FB85C } }
+            - lvgl.label.update: { id: timer_cap, text_color: 0x6F9A92 }
+            - lvgl.label.update: { id: timer_big, text_color: 0xFFFFFF }
+          else:
+            - if:
+                condition: { lambda: 'int t=id(g_timer_total); return t>0 && (long)id(g_timer_secs)*100 > (long)t*50;' }
+                then:
+                  - lvgl.arc.update: { id: timer_arc, indicator: { arc_color: 0x2FB85C } }
+                  - lvgl.label.update: { id: timer_cap, text_color: 0x2FB85C }
+                  - lvgl.label.update: { id: timer_big, text_color: 0xFFFFFF }
+                else:
+                  - if:
+                      condition: { lambda: 'int t=id(g_timer_total); return t>0 && (long)id(g_timer_secs)*100 > (long)t*20;' }
+                      then:
+                        - lvgl.arc.update: { id: timer_arc, indicator: { arc_color: 0xF5B83D } }
+                        - lvgl.label.update: { id: timer_cap, text_color: 0xF5B83D }
+                        - lvgl.label.update: { id: timer_big, text_color: 0xFFFFFF }
+                      else:
+                        - lvgl.arc.update: { id: timer_arc, indicator: { arc_color: 0xFF3B30 } }
+                        - lvgl.label.update: { id: timer_cap, text_color: 0xFF6B60 }
+                        - lvgl.label.update: { id: timer_big, text_color: 0xFF6B60 }
   - id: timer_start
     then:
       - lambda: |-
@@ -3125,29 +3155,41 @@ lvgl:
     - id: page_timer
       bg_color: 0x000000
       widgets:
+        - obj:   # faint outer ring for depth
+            id: timer_ring_out
+            align: CENTER
+            width: 332
+            height: 332
+            radius: 166
+            bg_opa: TRANSP
+            border_width: 2
+            border_color: 0x252B37
+            border_opa: 65%
+            clickable: false
+            scrollable: false
         - arc:
             id: timer_arc
             align: CENTER
             width: 300
             height: 300
-            arc_width: 10
+            arc_width: 14
             adjustable: false
             min_value: 0
             max_value: 100
             value: 100
             start_angle: 271
             end_angle: 269
-            arc_color: 0x3A0E0E
+            arc_color: 0x1C2027
             indicator:
-              arc_color: 0xFF3B30
-              arc_width: 10
+              arc_color: 0x2FB85C
+              arc_width: 14
         - label:
             id: timer_cap
             align: CENTER
-            y: -74
-            text: "TIMER"
+            y: -72
+            text: "SET"
             text_font: font_artist
-            text_color: 0xFF6B60
+            text_color: 0x6F9A92
         - label:
             id: timer_big
             align: CENTER
@@ -3158,13 +3200,16 @@ lvgl:
         - button:
             id: timer_play
             align: CENTER
-            y: 48
-            width: 54
-            height: 54
-            radius: 27
-            bg_color: 0xFF3B30
+            y: 54
+            width: 58
+            height: 58
+            radius: 29
+            bg_color: 0x2FB85C
             bg_opa: COVER
             border_width: 0
+            shadow_color: 0x2FB85C
+            shadow_width: 18
+            shadow_opa: 55%
             on_click:
               - script.execute: timer_start
             widgets:
@@ -3172,30 +3217,34 @@ lvgl:
         - button:
             id: timer_pause
             align: CENTER
-            x: -36
-            y: 48
-            width: 48
-            height: 48
-            radius: 24
-            bg_color: 0xFF3B30
+            x: -40
+            y: 54
+            width: 52
+            height: 52
+            radius: 26
+            bg_color: 0xF5B83D
             bg_opa: COVER
             border_width: 0
+            shadow_color: 0xF5B83D
+            shadow_width: 14
+            shadow_opa: 50%
             hidden: true
             on_click:
               - script.execute: timer_toggle
             widgets:
-              - label: { id: timer_pause_ic, align: CENTER, text: "", text_font: montserrat_22, text_color: 0xFFFFFF }
+              - label: { id: timer_pause_ic, align: CENTER, text: "", text_font: montserrat_22, text_color: 0x231803 }
         - button:
             id: timer_stop
             align: CENTER
-            x: 36
-            y: 48
-            width: 48
-            height: 48
-            radius: 24
-            bg_color: 0x2A2A2C
+            x: 40
+            y: 54
+            width: 52
+            height: 52
+            radius: 26
+            bg_color: 0x1E232E
             bg_opa: COVER
-            border_width: 0
+            border_width: 2
+            border_color: 0x2E3540
             hidden: true
             on_click:
               - script.execute: timer_halt
