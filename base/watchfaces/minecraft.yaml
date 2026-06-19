@@ -1,11 +1,12 @@
 # ═════════════════════════════════════════════════════════════════════════════
-#  MINECRAFT watchface (optional, id 3). A blocky scene: sky + grass/dirt ground,
-#  pixel-font time with the classic drop shadow, a pixel sun + outdoor temp, and a
-#  Minecraft-style heart bar for the battery. Enable in the thin config's files: list,
-#  pick it in Settings > Home screen > Watchface.
+#  MINECRAFT watchface (optional, id 3). A blocky scene: sky + a real textured
+#  grass/dirt ground (built from the game's grass_block_side + dirt textures), the
+#  Minecraft font for the time (with the classic drop shadow), a pixel sun + outdoor
+#  temp, and a Minecraft-style heart bar for the battery.
 #
-#  Built from the watchface contract (see base/watchfaces/demo.yaml for the commented
-#  template): self-registers at boot, self-shows on g_wf_req, renders itself each second.
+#  Assets (font + ground image) are fetched from this repo at compile time via raw
+#  GitHub URLs - on the BETA branch here; flip /beta/ -> /main/ when merging to main.
+#  Watchface contract: see base/watchfaces/demo.yaml.
 # ═════════════════════════════════════════════════════════════════════════════
 
 esphome:
@@ -15,38 +16,38 @@ esphome:
         - lambda: 'id(g_wf_present)[3] = true; id(g_wf_name)[3] = "Minecraft";'
 
 font:
-  # Pixelify Sans = a clean pixel font (Google Fonts) - reads "Minecraft-y"
-  - file: { type: gfonts, family: "Pixelify Sans", weight: 700 }
+  - file: https://raw.githubusercontent.com/MichalZaniewicz/esphome-guition-jc3636k718c-va/beta/assets/fonts/Minecraft.ttf
     id: mc_font_big
-    size: 84
+    size: 78
     glyphs: "0123456789:"
-  - file: { type: gfonts, family: "Pixelify Sans", weight: 600 }
+  - file: https://raw.githubusercontent.com/MichalZaniewicz/esphome-guition-jc3636k718c-va/beta/assets/fonts/Minecraft.ttf
     id: mc_font_sm
-    size: 22
+    size: 26
     glyphsets: [GF_Latin_Core]
+
+image:
+  - id: img_mc_ground
+    file: https://raw.githubusercontent.com/MichalZaniewicz/esphome-guition-jc3636k718c-va/beta/assets/sprites/minecraft/ground.png
+    type: RGB565
 
 lvgl:
   pages:
     - id: page_home_mc
       bg_color: 0x5A9BD4          # day sky
       widgets:
-        # ── ground (drawn first, behind everything) - overflows the round edges ──
-        - obj: { id: mc_dirt,  x: -35, y: 250, width: 430, height: 160, bg_color: 0x6F4E34, bg_opa: COVER, radius: 0, border_width: 0, clickable: false, scrollable: false }
-        - obj: { id: mc_grass, x: -35, y: 232, width: 430, height: 20,  bg_color: 0x6DB23B, bg_opa: COVER, radius: 0, border_width: 0, clickable: false, scrollable: false }
-        - obj: { id: mc_spot1, x: 70,  y: 300, width: 16, height: 16,   bg_color: 0x553B26, bg_opa: COVER, radius: 0, border_width: 0, clickable: false, scrollable: false }
-        - obj: { id: mc_spot2, x: 180, y: 344, width: 16, height: 16,   bg_color: 0x553B26, bg_opa: COVER, radius: 0, border_width: 0, clickable: false, scrollable: false }
-        - obj: { id: mc_spot3, x: 262, y: 304, width: 16, height: 16,   bg_color: 0x553B26, bg_opa: COVER, radius: 0, border_width: 0, clickable: false, scrollable: false }
+        # ── textured grass/dirt ground (drawn first), flush to the bottom edge ──
+        - image: { id: mc_ground, src: img_mc_ground, align: BOTTOM_MID, y: 0 }
         # ── sky decor: blocky clouds + a pixel sun ──
         - obj: { id: mc_cloud1, x: 40, y: 58, width: 58, height: 16, bg_color: 0xEFF4FB, bg_opa: COVER, radius: 0, border_width: 0, clickable: false, scrollable: false }
         - obj: { id: mc_cloud2, x: 30, y: 76, width: 40, height: 14, bg_color: 0xEFF4FB, bg_opa: COVER, radius: 0, border_width: 0, clickable: false, scrollable: false }
         - obj: { id: mc_sun, align: TOP_RIGHT, x: -42, y: 42, width: 44, height: 44, bg_color: 0xF6E27A, bg_opa: COVER, radius: 0, border_width: 0, clickable: false, scrollable: false }
-        - label: { id: mc_sun_temp, align: TOP_RIGHT, x: -96, y: 53, text: "--°", text_font: mc_font_sm, text_color: 0x16314A }
-        # ── time: a dark shadow label behind + white in front (the Minecraft look) ──
-        - label: { id: mc_time_sh, align: CENTER, x: 4,  y: -40, text: "00:00", text_font: mc_font_big, text_color: 0x2B4258 }
-        - label: { id: mc_time,    align: CENTER, x: 0,  y: -44, text: "00:00", text_font: mc_font_big, text_color: 0xFFFFFF }
-        - label: { id: mc_date,    align: CENTER, x: 0,  y: 16,  text: "",      text_font: mc_font_sm,  text_color: 0xEAF2FB }
+        - label: { id: mc_sun_temp, align: TOP_RIGHT, x: -98, y: 54, text: "--°", text_font: font_artist, text_color: 0x16314A }
+        # ── time: dark shadow label behind + white in front (the Minecraft look) ──
+        - label: { id: mc_time_sh, align: CENTER, x: 4, y: -40, text: "00:00", text_font: mc_font_big, text_color: 0x2B4258 }
+        - label: { id: mc_time,    align: CENTER, x: 0, y: -44, text: "00:00", text_font: mc_font_big, text_color: 0xFFFFFF }
+        - label: { id: mc_date,    align: CENTER, x: 0, y: 14,  text: "",      text_font: mc_font_sm,  text_color: 0xEAF2FB }
         # ── battery as a Minecraft heart bar (HUD) ──
-        - label: { id: mc_hearts,  align: CENTER, x: 0,  y: 44,  text: "",      text_font: icons18,     text_color: 0xE2453F }
+        - label: { id: mc_hearts,  align: CENTER, x: 0, y: 42,  text: "",      text_font: icons18,     text_color: 0xE2453F }
 
 interval:
   - interval: 50ms
@@ -78,7 +79,6 @@ script:
             std::string s = day + t.strftime(" %d %b");
             for (auto &c : s) { if (c >= 'a' && c <= 'z') c -= 32; }
             return s;
-      # Weather (sun block + outdoor temp) obeys the Show-weather toggle
       - if:
           condition: { lambda: 'return id(g_show_weather);' }
           then:
@@ -92,7 +92,6 @@ script:
           else:
             - lvgl.widget.hide: mc_sun
             - lvgl.widget.hide: mc_sun_temp
-      # Battery -> heart bar (5 hearts, each ~20%)
       - lvgl.label.update:
           id: mc_hearts
           text: !lambda |-
