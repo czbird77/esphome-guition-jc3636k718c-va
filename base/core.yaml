@@ -569,6 +569,14 @@ globals:
     type: int
     restore_value: yes
     initial_value: '0'
+  - id: g_wf_prev      # watchface picker: face to restore if the user cancels
+    type: int
+    restore_value: no
+    initial_value: '0'
+  - id: g_wf_pick      # watchface picker: face currently being previewed
+    type: int
+    restore_value: no
+    initial_value: '0'
   - id: g_nf_glyph     # current weather MDI glyph (set when the weather state changes; reused by the Neon face)
     type: std::string
     restore_value: no
@@ -928,6 +936,16 @@ script:
           int wf = id(g_watchface); if (wf < 0 || wf > 1) wf = 0;
           std::string opts = std::string("Weather\nClimate\nWatchface: ") + NAMES[wf];
           lv_roller_set_options(id(home_roller)->obj, opts.c_str(), LV_ROLLER_MODE_NORMAL);
+  # Watchface picker (mode 33): update + show the overlay hint with the previewed face name.
+  - id: facepick_render
+    then:
+      - lvgl.label.update:
+          id: pick_hint
+          text: !lambda |-
+            static const char* NAMES[2] = {"Classic", "Neon"};
+            int wf = id(g_wf_pick); if (wf < 0 || wf > 1) wf = 0;
+            return std::string("<  ") + NAMES[wf] + "  >\nturn = switch    tap = keep";
+      - lvgl.widget.show: pick_hint
   # Draws the battery indicator on the home screen. Charging: lightning bolt + green +
   # "filling" animation (icon cycles empty→full). On battery: static level icon.
   - id: batt_render
@@ -992,10 +1010,10 @@ script:
       # g_cur_page: 0=base 1=page_mode 2=page_settings 3=page_controls. Animation only when the page changes.
       - if:
           condition:
-            lambda: 'int w=(id(g_mode)==0)?0:(id(g_mode)==5)?2:(id(g_mode)==10)?3:1; return w != id(g_cur_page);'
+            lambda: 'int w=(id(g_mode)==0||id(g_mode)==33)?0:(id(g_mode)==5)?2:(id(g_mode)==10)?3:1; return w != id(g_cur_page);'
           then:
-            - if:   # -> BASE: return per g_base (0=clock 1=player 2=timer); direction per g_exit_anim (0=right 1=down 2=up)
-                condition: { lambda: 'return id(g_mode) == 0;' }
+            - if:   # -> BASE (also the watchface picker, mode 33): return per g_base; direction per g_exit_anim
+                condition: { lambda: 'return id(g_mode) == 0 || id(g_mode) == 33;' }
                 then:
                   - lambda: |-
                       // g_exit_anim 0=right 1=down 2=up  ->  g_nav_anim 1=right 3=bottom 2=top
@@ -1013,7 +1031,7 @@ script:
                 condition: { lambda: 'return id(g_mode) == 10;' }
                 then: [lvgl.page.show: { id: page_controls, animation: move_top, time: 250ms }]
             - if:   # -> MODE: from settings "deeper" (to the left), menu from base "from bottom", rest fade
-                condition: { lambda: 'return id(g_mode) != 0 && id(g_mode) != 5 && id(g_mode) != 10;' }
+                condition: { lambda: 'return id(g_mode) != 0 && id(g_mode) != 5 && id(g_mode) != 10 && id(g_mode) != 33;' }
                 then:
                   - if:
                       condition: { lambda: 'return id(g_cur_page) == 2;' }
@@ -1023,10 +1041,10 @@ script:
                             condition: { lambda: 'return id(g_mode) == 1;' }
                             then: [lvgl.page.show: { id: page_mode, animation: move_top, time: 250ms }]
                             else: [lvgl.page.show: { id: page_mode, animation: fade_in, time: 250ms }]
-            - lambda: 'id(g_cur_page) = (id(g_mode)==0)?0:(id(g_mode)==5)?2:(id(g_mode)==10)?3:1;'
+            - lambda: 'id(g_cur_page) = (id(g_mode)==0||id(g_mode)==33)?0:(id(g_mode)==5)?2:(id(g_mode)==10)?3:1;'
       - if:
           condition:
-            lambda: 'return id(g_mode) == 0 || id(g_va_active);'
+            lambda: 'return id(g_mode) == 0 || id(g_mode) == 33 || id(g_va_active);'
           then:
             - lvgl.widget.hide: ui_dim
             - lvgl.widget.hide: ui_head_bg
@@ -1521,10 +1539,17 @@ binary_sensor:
                                   else { id(g_night_to)--; if (id(g_night_to) < 0) id(g_night_to) = 23; }
                               - script.execute: ui_render
                             else:
-                              - media_player.volume_down:
-                                  id: media_player_speaker
-                              - script.execute: flash_volume
-                              - script.execute: ring_vol_flash
+                              - if:   # watchface picker: previous face
+                                  condition: { lambda: 'return id(g_mode) == 33;' }
+                                  then:
+                                    - lambda: 'id(g_wf_pick) = (id(g_wf_pick) + 1) % 2; id(g_watchface) = id(g_wf_pick);'
+                                    - script.execute: face_apply
+                                    - script.execute: facepick_render
+                                  else:
+                                    - media_player.volume_down:
+                                        id: media_player_speaker
+                                    - script.execute: flash_volume
+                                    - script.execute: ring_vol_flash
   - platform: gpio
     name: "Knob right"
     id: knob_right
@@ -1577,10 +1602,17 @@ binary_sensor:
                                   else { id(g_night_to)++; if (id(g_night_to) > 23) id(g_night_to) = 0; }
                               - script.execute: ui_render
                             else:
-                              - media_player.volume_up:
-                                  id: media_player_speaker
-                              - script.execute: flash_volume
-                              - script.execute: ring_vol_flash
+                              - if:   # watchface picker: next face
+                                  condition: { lambda: 'return id(g_mode) == 33;' }
+                                  then:
+                                    - lambda: 'id(g_wf_pick) = (id(g_wf_pick) + 1) % 2; id(g_watchface) = id(g_wf_pick);'
+                                    - script.execute: face_apply
+                                    - script.execute: facepick_render
+                                  else:
+                                    - media_player.volume_up:
+                                        id: media_player_speaker
+                                    - script.execute: flash_volume
+                                    - script.execute: ring_vol_flash
 
 ###############################################################################
 # DISPLAY (QSPI ST77916) + BACKLIGHT + TOUCH (CST816)
@@ -1935,8 +1967,34 @@ touchscreen:
         then:
           - if: { condition: { lambda: 'return id(g_gesture) == 0 && id(g_sub_idx) == 0;' }, then: [ lambda: 'id(g_show_weather) = !id(g_show_weather);', script.execute: disp_apply, script.execute: ui_render ] }
           - if: { condition: { lambda: 'return id(g_gesture) == 0 && id(g_sub_idx) == 1;' }, then: [ lambda: 'id(g_show_climate) = !id(g_show_climate);', script.execute: disp_apply, script.execute: ui_render ] }
-          - if: { condition: { lambda: 'return id(g_gesture) == 0 && id(g_sub_idx) == 2;' }, then: [ lambda: 'id(g_watchface) = (id(g_watchface) + 1) % 2;', script.execute: home_roller_build, script.execute: face_apply, script.execute: ui_render ] }
+          - if:   # enter the live watchface picker (mode 33) on the home page
+              condition: { lambda: 'return id(g_gesture) == 0 && id(g_sub_idx) == 2;' }
+              then:
+                - lambda: 'id(g_wf_prev) = id(g_watchface); id(g_wf_pick) = id(g_watchface); id(g_mode) = 33;'
+                - script.execute: ui_render
+                - script.execute: face_apply
+                - script.execute: facepick_render
           - if: { condition: { lambda: 'return id(g_gesture) == 3 || id(g_gesture) == 1;' }, then: [ lambda: 'id(g_mode) = 5;', script.execute: ui_render ] }
+    # === WATCHFACE PICKER (33) === knob switches faces live; tap = keep, swipe-right/hold = cancel (revert)
+    - if:
+        condition: { lambda: 'return id(g_mode0) == 33;' }
+        then:
+          - if:   # tap -> keep the previewed face (already applied + persisted), drop to home
+              condition: { lambda: 'return id(g_gesture) == 0;' }
+              then:
+                - lvgl.widget.hide: pick_hint
+                - script.execute: home_roller_build
+                - lambda: 'id(g_mode) = 0; id(g_exit_anim) = 0;'
+                - script.execute: ui_render
+          - if:   # swipe-right / hold -> cancel: restore the previous face
+              condition: { lambda: 'return id(g_gesture) == 3 || id(g_gesture) == 1;' }
+              then:
+                - lvgl.widget.hide: pick_hint
+                - lambda: 'id(g_watchface) = id(g_wf_prev);'
+                - script.execute: face_apply
+                - script.execute: home_roller_build
+                - lambda: 'id(g_mode) = 0; id(g_exit_anim) = 0;'
+                - script.execute: ui_render
     # === WIDGETS (17) === list of per-screen groups; tap opens one; right/hold = back to settings
     - if:
         condition: { lambda: 'return id(g_mode0) == 17;' }
@@ -2868,6 +2926,23 @@ lvgl:
                   text: ""
                   text_font: montserrat_18
                   text_color: 0x6f9a92
+        # Watchface picker hint (overlay, shown only in pick mode 33) - last so it draws on top
+        - label:
+            id: pick_hint
+            align: TOP_MID
+            y: 8
+            text: ""
+            text_font: font_med
+            text_align: CENTER
+            text_color: 0xFFFFFF
+            bg_color: 0x101620
+            bg_opa: 85%
+            radius: 12
+            pad_left: 16
+            pad_right: 16
+            pad_top: 7
+            pad_bottom: 7
+            hidden: true
     - id: page_mode
       bg_color: 0x000000
       widgets:
