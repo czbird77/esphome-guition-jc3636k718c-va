@@ -2983,7 +2983,7 @@ lvgl:
                   id: pick_help
                   align: CENTER
                   y: 17
-                  text: "tap to keep"
+                  text: "Tap to keep"
                   text_font: font_artist
                   text_color: 0x6A7280
     - id: page_mode
