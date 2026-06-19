@@ -1498,58 +1498,64 @@ binary_sensor:
         pullup: true
     on_press:
       - if:
-          condition:
-            lambda: 'return id(g_mode) == 0 && (id(g_knob_capture) || (id(g_base) == 2 && !id(g_timer_active)));'
+          condition: { lambda: 'return id(g_disp_off);' }   # asleep -> just wake, don't act (same as touch)
           then:
-            - if:
-                condition: { lambda: 'return id(g_knob_capture);' }
-                then: [ lambda: 'id(g_knob_delta)--;' ]
-                else:
-                  - lambda: 'id(g_set_min)--; if (id(g_set_min) < 1) id(g_set_min) = 1;'
-                  - script.execute: timer_render
+            - light.turn_on: { id: backlight_light, brightness: !lambda 'return id(g_bright) / 100.0f;' }
+            - lambda: 'id(g_disp_off) = false; id(g_idle_ticks) = 0;'
           else:
             - if:
                 condition:
-                  lambda: 'return id(g_mode) == 5 || id(g_mode) == 11 || (id(g_mode) >= 12 && id(g_mode) <= 17) || id(g_mode) == 30;'
+                  lambda: 'return id(g_mode) == 0 && (id(g_knob_capture) || (id(g_base) == 2 && !id(g_timer_active)));'
                 then:
-                  - lambda: |-
-                      if (id(g_mode) == 11) { if (id(g_disp_idx) > 0) id(g_disp_idx)--; }
-                      else if (id(g_mode) == 5) { if (id(g_set_idx) > 0) id(g_set_idx)--; }
-                      else if (id(g_mode) == 17) { if (id(g_wgrp_idx) > 0) id(g_wgrp_idx)--; }
-                      else if (id(g_mode) == 30) { if (id(g_wopt_idx) > 0) id(g_wopt_idx)--; }
-                      else { if (id(g_sub_idx) > 0) id(g_sub_idx)--; }
-                  - script.execute: ui_render
+                  - if:
+                      condition: { lambda: 'return id(g_knob_capture);' }
+                      then: [ lambda: 'id(g_knob_delta)--;' ]
+                      else:
+                        - lambda: 'id(g_set_min)--; if (id(g_set_min) < 1) id(g_set_min) = 1;'
+                        - script.execute: timer_render
                 else:
                   - if:
                       condition:
-                        lambda: 'return id(g_mode) == 6;'
+                        lambda: 'return id(g_mode) == 5 || id(g_mode) == 11 || (id(g_mode) >= 12 && id(g_mode) <= 17) || id(g_mode) == 30;'
                       then:
-                        - lambda: 'id(g_bright) -= 10; if (id(g_bright) < 10) id(g_bright) = 10;'
-                        - light.turn_on:
-                            id: backlight_light
-                            brightness: !lambda 'return id(g_bright) / 100.0f;'
+                        - lambda: |-
+                            if (id(g_mode) == 11) { if (id(g_disp_idx) > 0) id(g_disp_idx)--; }
+                            else if (id(g_mode) == 5) { if (id(g_set_idx) > 0) id(g_set_idx)--; }
+                            else if (id(g_mode) == 17) { if (id(g_wgrp_idx) > 0) id(g_wgrp_idx)--; }
+                            else if (id(g_mode) == 30) { if (id(g_wopt_idx) > 0) id(g_wopt_idx)--; }
+                            else { if (id(g_sub_idx) > 0) id(g_sub_idx)--; }
                         - script.execute: ui_render
                       else:
                         - if:
-                            condition: { lambda: 'return id(g_mode) == 24 || id(g_mode) == 25 || id(g_mode) == 26;' }
+                            condition:
+                              lambda: 'return id(g_mode) == 6;'
                             then:
-                              - lambda: |-
-                                  if (id(g_mode) == 24) { if (id(g_blank_idx) > 0) id(g_blank_idx)--; }
-                                  else if (id(g_mode) == 25) { id(g_night_from)--; if (id(g_night_from) < 0) id(g_night_from) = 23; }
-                                  else { id(g_night_to)--; if (id(g_night_to) < 0) id(g_night_to) = 23; }
+                              - lambda: 'id(g_bright) -= 10; if (id(g_bright) < 10) id(g_bright) = 10;'
+                              - light.turn_on:
+                                  id: backlight_light
+                                  brightness: !lambda 'return id(g_bright) / 100.0f;'
                               - script.execute: ui_render
                             else:
-                              - if:   # watchface picker: previous face
-                                  condition: { lambda: 'return id(g_mode) == 33;' }
+                              - if:
+                                  condition: { lambda: 'return id(g_mode) == 24 || id(g_mode) == 25 || id(g_mode) == 26;' }
                                   then:
-                                    - lambda: 'id(g_wf_pick) = (id(g_wf_pick) + 1) % 2; id(g_watchface) = id(g_wf_pick);'
-                                    - script.execute: face_apply
-                                    - script.execute: facepick_render
+                                    - lambda: |-
+                                        if (id(g_mode) == 24) { if (id(g_blank_idx) > 0) id(g_blank_idx)--; }
+                                        else if (id(g_mode) == 25) { id(g_night_from)--; if (id(g_night_from) < 0) id(g_night_from) = 23; }
+                                        else { id(g_night_to)--; if (id(g_night_to) < 0) id(g_night_to) = 23; }
+                                    - script.execute: ui_render
                                   else:
-                                    - media_player.volume_down:
-                                        id: media_player_speaker
-                                    - script.execute: flash_volume
-                                    - script.execute: ring_vol_flash
+                                    - if:   # watchface picker: previous face
+                                        condition: { lambda: 'return id(g_mode) == 33;' }
+                                        then:
+                                          - lambda: 'id(g_wf_pick) = (id(g_wf_pick) + 1) % 2; id(g_watchface) = id(g_wf_pick);'
+                                          - script.execute: face_apply
+                                          - script.execute: facepick_render
+                                        else:
+                                          - media_player.volume_down:
+                                              id: media_player_speaker
+                                          - script.execute: flash_volume
+                                          - script.execute: ring_vol_flash
   - platform: gpio
     name: "Knob right"
     id: knob_right
@@ -1561,58 +1567,64 @@ binary_sensor:
         pullup: true
     on_press:
       - if:
-          condition:
-            lambda: 'return id(g_mode) == 0 && (id(g_knob_capture) || (id(g_base) == 2 && !id(g_timer_active)));'
+          condition: { lambda: 'return id(g_disp_off);' }   # asleep -> just wake, don't act (same as touch)
           then:
-            - if:
-                condition: { lambda: 'return id(g_knob_capture);' }
-                then: [ lambda: 'id(g_knob_delta)++;' ]
-                else:
-                  - lambda: 'id(g_set_min)++; if (id(g_set_min) > 180) id(g_set_min) = 180;'
-                  - script.execute: timer_render
+            - light.turn_on: { id: backlight_light, brightness: !lambda 'return id(g_bright) / 100.0f;' }
+            - lambda: 'id(g_disp_off) = false; id(g_idle_ticks) = 0;'
           else:
             - if:
                 condition:
-                  lambda: 'return id(g_mode) == 5 || id(g_mode) == 11 || (id(g_mode) >= 12 && id(g_mode) <= 17) || id(g_mode) == 30;'
+                  lambda: 'return id(g_mode) == 0 && (id(g_knob_capture) || (id(g_base) == 2 && !id(g_timer_active)));'
                 then:
-                  - lambda: |-
-                      if (id(g_mode) == 11) { if (id(g_disp_idx) < 4) id(g_disp_idx)++; }
-                      else if (id(g_mode) == 5) { if (id(g_set_idx) < id(g_set_n) - 1) id(g_set_idx)++; }
-                      else if (id(g_mode) == 17) { if (id(g_wgrp_idx) < id(g_wgrp_n) - 1) id(g_wgrp_idx)++; }
-                      else if (id(g_mode) == 30) { if (id(g_wopt_idx) < id(g_wcur_n) - 1) id(g_wopt_idx)++; }
-                      else { int mx = (id(g_mode) == 15) ? 3 : (id(g_mode) == 13) ? 2 : (id(g_mode) == 16) ? 3 : (id(g_mode) == 12) ? 2 : 0; if (id(g_sub_idx) < mx) id(g_sub_idx)++; }
-                  - script.execute: ui_render
+                  - if:
+                      condition: { lambda: 'return id(g_knob_capture);' }
+                      then: [ lambda: 'id(g_knob_delta)++;' ]
+                      else:
+                        - lambda: 'id(g_set_min)++; if (id(g_set_min) > 180) id(g_set_min) = 180;'
+                        - script.execute: timer_render
                 else:
                   - if:
                       condition:
-                        lambda: 'return id(g_mode) == 6;'
+                        lambda: 'return id(g_mode) == 5 || id(g_mode) == 11 || (id(g_mode) >= 12 && id(g_mode) <= 17) || id(g_mode) == 30;'
                       then:
-                        - lambda: 'id(g_bright) += 10; if (id(g_bright) > 100) id(g_bright) = 100;'
-                        - light.turn_on:
-                            id: backlight_light
-                            brightness: !lambda 'return id(g_bright) / 100.0f;'
+                        - lambda: |-
+                            if (id(g_mode) == 11) { if (id(g_disp_idx) < 4) id(g_disp_idx)++; }
+                            else if (id(g_mode) == 5) { if (id(g_set_idx) < id(g_set_n) - 1) id(g_set_idx)++; }
+                            else if (id(g_mode) == 17) { if (id(g_wgrp_idx) < id(g_wgrp_n) - 1) id(g_wgrp_idx)++; }
+                            else if (id(g_mode) == 30) { if (id(g_wopt_idx) < id(g_wcur_n) - 1) id(g_wopt_idx)++; }
+                            else { int mx = (id(g_mode) == 15) ? 3 : (id(g_mode) == 13) ? 2 : (id(g_mode) == 16) ? 3 : (id(g_mode) == 12) ? 2 : 0; if (id(g_sub_idx) < mx) id(g_sub_idx)++; }
                         - script.execute: ui_render
                       else:
                         - if:
-                            condition: { lambda: 'return id(g_mode) == 24 || id(g_mode) == 25 || id(g_mode) == 26;' }
+                            condition:
+                              lambda: 'return id(g_mode) == 6;'
                             then:
-                              - lambda: |-
-                                  if (id(g_mode) == 24) { if (id(g_blank_idx) < 4) id(g_blank_idx)++; }
-                                  else if (id(g_mode) == 25) { id(g_night_from)++; if (id(g_night_from) > 23) id(g_night_from) = 0; }
-                                  else { id(g_night_to)++; if (id(g_night_to) > 23) id(g_night_to) = 0; }
+                              - lambda: 'id(g_bright) += 10; if (id(g_bright) > 100) id(g_bright) = 100;'
+                              - light.turn_on:
+                                  id: backlight_light
+                                  brightness: !lambda 'return id(g_bright) / 100.0f;'
                               - script.execute: ui_render
                             else:
-                              - if:   # watchface picker: next face
-                                  condition: { lambda: 'return id(g_mode) == 33;' }
+                              - if:
+                                  condition: { lambda: 'return id(g_mode) == 24 || id(g_mode) == 25 || id(g_mode) == 26;' }
                                   then:
-                                    - lambda: 'id(g_wf_pick) = (id(g_wf_pick) + 1) % 2; id(g_watchface) = id(g_wf_pick);'
-                                    - script.execute: face_apply
-                                    - script.execute: facepick_render
+                                    - lambda: |-
+                                        if (id(g_mode) == 24) { if (id(g_blank_idx) < 4) id(g_blank_idx)++; }
+                                        else if (id(g_mode) == 25) { id(g_night_from)++; if (id(g_night_from) > 23) id(g_night_from) = 0; }
+                                        else { id(g_night_to)++; if (id(g_night_to) > 23) id(g_night_to) = 0; }
+                                    - script.execute: ui_render
                                   else:
-                                    - media_player.volume_up:
-                                        id: media_player_speaker
-                                    - script.execute: flash_volume
-                                    - script.execute: ring_vol_flash
+                                    - if:   # watchface picker: next face
+                                        condition: { lambda: 'return id(g_mode) == 33;' }
+                                        then:
+                                          - lambda: 'id(g_wf_pick) = (id(g_wf_pick) + 1) % 2; id(g_watchface) = id(g_wf_pick);'
+                                          - script.execute: face_apply
+                                          - script.execute: facepick_render
+                                        else:
+                                          - media_player.volume_up:
+                                              id: media_player_speaker
+                                          - script.execute: flash_volume
+                                          - script.execute: ring_vol_flash
 
 ###############################################################################
 # DISPLAY (QSPI ST77916) + BACKLIGHT + TOUCH (CST816)
