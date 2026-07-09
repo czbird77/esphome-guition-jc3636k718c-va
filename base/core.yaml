@@ -2458,6 +2458,12 @@ font:
       - "\U000f06ba"
       - "\U000f048b"
       - "\U000f068a"
+      - "\U000f02fc"   # information
+      - "\U000f0cbf"   # radio-fm
+      - "\U000f0439"   # radio
+      - "\U000f04b2"   # sleep
+      - "\U000f0594"   # weather-night      
+      - "\U000f18d6"   # sun-thermometer      
       - "󰖐"
       - "󰖑"
       - "󰖓"
