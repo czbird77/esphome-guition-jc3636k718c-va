@@ -1597,8 +1597,12 @@ binary_sensor:
                                           - script.execute: face_apply
                                           - script.execute: facepick_render
                                         else:
-                                          - media_player.volume_down:
-                                              id: media_player_speaker
+                                          #- media_player.volume_down:
+                                          #    id: media_player_speaker
+                                          - homeassistant.action:
+                                              action: media_player.volume_down
+                                              data:
+                                                  entity_id: "${player_entity}"                                          
                                           - script.execute: flash_volume
                                           - script.execute: ring_vol_flash
   - platform: gpio
@@ -1666,8 +1670,12 @@ binary_sensor:
                                           - script.execute: face_apply
                                           - script.execute: facepick_render
                                         else:
-                                          - media_player.volume_up:
-                                              id: media_player_speaker
+                                          #- media_player.volume_up:
+                                          #    id: media_player_speaker
+                                          - homeassistant.action:
+                                              action: media_player.volume_up
+                                              data:
+                                                  entity_id: "${player_entity}"                                              
                                           - script.execute: flash_volume
                                           - script.execute: ring_vol_flash
 
