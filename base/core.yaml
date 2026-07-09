@@ -1547,6 +1547,7 @@ binary_sensor:
           then:
             - light.turn_on: { id: backlight_light, brightness: !lambda 'return id(g_bright) / 100.0f;' }
             - lambda: 'id(g_disp_off) = false; id(g_idle_ticks) = 0;'
+            - lvgl.widget.hide: wake_catcher
           else:
             - if:
                 condition:
@@ -1620,6 +1621,7 @@ binary_sensor:
           then:
             - light.turn_on: { id: backlight_light, brightness: !lambda 'return id(g_bright) / 100.0f;' }
             - lambda: 'id(g_disp_off) = false; id(g_idle_ticks) = 0;'
+            - lvgl.widget.hide: wake_catcher
           else:
             - if:
                 condition:
@@ -1838,6 +1840,7 @@ touchscreen:
         then:
           - light.turn_on: { id: backlight_light, brightness: !lambda 'return id(g_bright) / 100.0f;' }
           - lambda: 'id(g_disp_off) = false; id(g_wake_consume) = true;'
+          - lvgl.widget.hide: wake_catcher
   on_update:
     - lambda: |-
         if (!touches.empty()) {
@@ -2697,6 +2700,18 @@ interval:
                       id: media_player_speaker
                       media_file: alarm_sound
                       announcement: true
+      - if:
+          condition: { lambda: 'return id(g_want_off) && !id(g_disp_off);' }
+          then:
+            - light.turn_off: backlight_light
+            - lambda: 'id(g_disp_off) = true;'
+            - lvgl.widget.show: wake_catcher
+      - if:
+          condition: { lambda: 'return !id(g_want_off) && id(g_disp_off);' }
+          then:
+            - light.turn_on: { id: backlight_light, brightness: !lambda 'return id(g_bright) / 100.0f;' }
+            - lambda: 'id(g_disp_off) = false;'
+            - lvgl.widget.hide: wake_catcher                      
 
 lvgl:
   # A <25% buffer lands in FAST internal RAM (instead of slow PSRAM at the default 100%)
@@ -2829,6 +2844,16 @@ lvgl:
           text: "50%"
           text_color: 0x5FF0D9
           text_font: montserrat_20
+      - obj:
+          id: wake_catcher
+          x: 0
+          y: 0
+          width: 360
+          height: 360
+          radius: 0
+          border_width: 0
+          bg_opa: TRANSP
+          hidden: true          
   pages:
     # --- Home page: clock + Assistant status ---
     # --- Boot splash: typewriter "HELLO!" then fade to the clock (driven by the 150ms interval) ---
