@@ -637,7 +637,7 @@ globals:
   - id: g_set_min      # default timer minutes (after restart); the knob changes it
     type: int
     restore_value: no
-    initial_value: '60'
+    initial_value: '5'
   - id: g_timer_secs   # remaining seconds (display + local countdown)
     type: int
     restore_value: no
