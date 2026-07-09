@@ -2462,7 +2462,6 @@ font:
       - "\U000f0cbf"   # radio-fm
       - "\U000f0439"   # radio
       - "\U000f04b2"   # sleep
-      - "\U000f0594"   # weather-night      
       - "\U000f18d6"   # sun-thermometer      
       - "󰖐"
       - "󰖑"
