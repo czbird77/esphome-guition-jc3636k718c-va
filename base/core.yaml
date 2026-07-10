@@ -9,6 +9,9 @@
 # (player, timer, games, weather, demo) live as packages in base/screens/ - see base/screens/README.md.
 ###############################################################################
 
+debug:
+  update_interval: 30s
+  
 substitutions:
   name: voice-knob
   friendly_name: "Voice Knob"
