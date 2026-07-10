@@ -9,8 +9,8 @@
 # (player, timer, games, weather, demo) live as packages in base/screens/ - see base/screens/README.md.
 ###############################################################################
 
-#debug:
-#  update_interval: 30s
+debug:
+  update_interval: 30s
   
 substitutions:
   name: voice-knob
@@ -272,7 +272,7 @@ psram:
   speed: 80MHz
 
 logger:
-  level: INFO   # less logging = less overhead (DEBUG was very noisy, esp. during VA)
+  level: DEBUG   # less logging = less overhead (DEBUG was very noisy, esp. during VA)
 
 api:
 
