@@ -96,11 +96,15 @@ text_sensor:
     on_value:
       - lambda: |-
           if (x.empty()) return;
-          std::string url = x.rfind("http", 0) == 0 ? x : std::string("${ha_base_url}") + x;
-          if (url == id(g_last_pic)) return;   // same album art -> don't reload (less flicker)
+          bool is_absolute = x.rfind("http", 0) == 0;
+          std::string orig = is_absolute ? x : std::string("${ha_base_url}") + x;
+          std::string url = is_absolute
+            ? (std::string("https://images.weserv.nl/?url=") + orig + "&w=360&h=360&fit=cover&output=jpg&q=80")
+            : orig;
+          if (url == id(g_last_pic)) return;
           id(g_last_pic) = url;
           id(album_art)->set_url(url.c_str());
-          id(album_art)->update();
+          id(album_art)->update();          
   # Player state -> only "playing" shows the player; pause/stop = player disappears (clock)
   - platform: homeassistant
     id: media_state
