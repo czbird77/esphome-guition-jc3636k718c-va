@@ -2466,6 +2466,10 @@ font:
       - "\U000f0439"   # radio
       - "\U000f04b2"   # sleep
       - "\U000f18d6"   # sun-thermometer      
+      - "\U000f040a"   # play
+      - "\U000f03e4"   # pause
+      - "\U000f04ae"   # skip-previous
+      - "\U000f04ad"   # skip-next      
       - "󰖐"
       - "󰖑"
       - "󰖓"
