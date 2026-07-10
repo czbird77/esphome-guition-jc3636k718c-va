@@ -105,9 +105,14 @@ text_sensor:
     id: media_state
     entity_id: ${player_info_entity}
     on_value:
-      - lvgl.label.update:   # icon on the button: pause when playing, play when not
-          id: lbl_play
-          text: !lambda 'return id(media_state).state == "playing" ? std::string("") : std::string("");'
+      - if:
+          condition: { lambda: 'return x == "playing";' }
+          then:
+            - lvgl.widget.hide: ic_play
+            - lvgl.widget.show: ic_pause
+          else:
+            - lvgl.widget.hide: ic_pause
+            - lvgl.widget.show: ic_play
       - if:
           condition:
             lambda: 'return !id(g_va_active) && !id(g_boot) && id(g_mode) == 0 && (id(g_base) == 0 || id(g_base) == 1);'   # auto-switch clock<->player only when we're on the clock/player (and not during boot splash)
@@ -223,7 +228,7 @@ lvgl:
                   action: media_player.media_previous_track
                   data: { entity_id: "${player_info_entity}" }
             widgets:
-              - label: { align: CENTER, text: "", text_font: montserrat_22, text_color: 0xCFEAE4 }
+              - label: { align: CENTER, text: "\U000f04ae", text_font: icons34, text_color: 0xCFEAE4 }
         - button:
             id: btn_play
             align: CENTER
@@ -240,7 +245,8 @@ lvgl:
                   action: media_player.media_play_pause
                   data: { entity_id: "${player_info_entity}" }
             widgets:
-              - label: { id: lbl_play, align: CENTER, text: "", text_font: montserrat_28, text_color: 0x06201C }
+              - label: { id: ic_pause, align: CENTER, text: "\U000f03e4", text_font: icons34, text_color: 0x06201C, hidden: true }
+              - label: { id: ic_play,  align: CENTER, text: "\U000f040a", text_font: icons34, text_color: 0x06201C }
         - button:
             id: btn_next
             align: CENTER
@@ -257,7 +263,8 @@ lvgl:
                   action: media_player.media_next_track
                   data: { entity_id: "${player_info_entity}" }
             widgets:
-              - label: { align: CENTER, text: "", text_font: montserrat_22, text_color: 0xCFEAE4 }
+              - label: { align: CENTER, text: "\U000f04ad", text_font: icons34, text_color: 0xCFEAE4 }
+
         # Time + progress bar
         - label:
             id: lbl_time
