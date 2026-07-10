@@ -276,6 +276,7 @@ lvgl:
             value: 0
             border_width: 0
             indicator:
+              bg_color: 0x2FE6CF
 
 script:
   - id: media_title_render
@@ -285,4 +286,4 @@ script:
           text: !lambda |-
             if (!id(g_media_title).empty()) return id(g_media_title);
             if (!id(g_media_cid).empty()) return id(g_media_cid);
-            return std::string("-");bg_color: 0x2FE6CF
+            return std::string("-");
