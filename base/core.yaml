@@ -2619,16 +2619,6 @@ interval:
           if (bs > 0 && id(g_idle_ticks) * 2 >= bs) off = true;
           if (id(g_va_active) || id(g_mode) == 3 || id(g_mode) == 4) off = false;
           id(g_want_off) = off;
-      - if:
-          condition: { lambda: 'return id(g_want_off) && !id(g_disp_off);' }
-          then:
-            - light.turn_off: backlight_light
-            - lambda: 'id(g_disp_off) = true;'
-      - if:
-          condition: { lambda: 'return !id(g_want_off) && id(g_disp_off);' }
-          then:
-            - light.turn_on: { id: backlight_light, brightness: !lambda 'return id(g_bright) / 100.0f;' }
-            - lambda: 'id(g_disp_off) = false;'
   - interval: 1s
     then:
       # TZ self-heal: some ESPHome builds reset the device timezone to UTC at runtime (e.g. on a
