@@ -1,7 +1,6 @@
 # Player - optional carousel screen (base id 1). Full-screen album art + transport.
 # Remove it: drop this file from your config's package "files:" list.
 # Volume control + the volume overlay stay in the core; this is only the now-playing SCREEN.
-
 esphome:
   on_boot:
     - priority: 690
@@ -27,7 +26,7 @@ globals:
   - id: g_media_cid
     type: std::string
     restore_value: no
-    initial_value: '""'    
+    initial_value: '""'
 
 # Required by online_image (fetching album art over HTTP)
 http_request:
@@ -51,37 +50,39 @@ online_image:
       - logger.log: "Failed to fetch album art"
 
 sensor:
+  # INFO (Music Assistant) - pozice/délka pro progress bar
   - platform: homeassistant
     id: media_pos
-    entity_id: ${player_entity}
+    entity_id: ${player_info_entity}
     attribute: media_position
     on_value:
       - lambda: 'id(g_pos) = (int) x;'
   - platform: homeassistant
     id: media_dur
-    entity_id: ${player_entity}
+    entity_id: ${player_info_entity}
     attribute: media_duration
     on_value:
       - lambda: 'id(g_dur) = (int) x;'
 
 text_sensor:
+  # INFO (Music Assistant) - title/artist/obrázek/stav
   - platform: homeassistant
     id: media_title
-    entity_id: ${player_entity}
+    entity_id: ${player_info_entity}
     attribute: media_title
     on_value:
       - lambda: 'id(g_media_title) = x;'
       - script.execute: media_title_render
   - platform: homeassistant
     id: media_cid
-    entity_id: ${player_entity}
+    entity_id: ${player_info_entity}
     attribute: media_content_id
     on_value:
       - lambda: 'id(g_media_cid) = x;'
-      - script.execute: media_title_render      
+      - script.execute: media_title_render
   - platform: homeassistant
     id: media_artist
-    entity_id: ${player_entity}
+    entity_id: ${player_info_entity}
     attribute: media_artist
     on_value:
       - lvgl.label.update:
@@ -89,7 +90,7 @@ text_sensor:
           text: !lambda 'return x;'
   - platform: homeassistant
     id: media_pic
-    entity_id: ${player_entity}
+    entity_id: ${player_info_entity}
     attribute: entity_picture
     on_value:
       - lambda: |-
@@ -102,11 +103,11 @@ text_sensor:
   # Player state -> only "playing" shows the player; pause/stop = player disappears (clock)
   - platform: homeassistant
     id: media_state
-    entity_id: ${player_entity}
+    entity_id: ${player_info_entity}
     on_value:
       - lvgl.label.update:   # icon on the button: pause when playing, play when not
           id: lbl_play
-          text: !lambda 'return id(media_state).state == "playing" ? std::string("") : std::string("");'
+          text: !lambda 'return id(media_state).state == "playing" ? std::string("") : std::string("");'
       - if:
           condition:
             lambda: 'return !id(g_va_active) && !id(g_boot) && id(g_mode) == 0 && (id(g_base) == 0 || id(g_base) == 1);'   # auto-switch clock<->player only when we're on the clock/player (and not during boot splash)
@@ -220,9 +221,9 @@ lvgl:
             on_click:
               - homeassistant.action:
                   action: media_player.media_previous_track
-                  data: { entity_id: "${player_entity}" }
+                  data: { entity_id: "${player_info_entity}" }
             widgets:
-              - label: { align: CENTER, text: "", text_font: montserrat_22, text_color: 0xCFEAE4 }
+              - label: { align: CENTER, text: "", text_font: montserrat_22, text_color: 0xCFEAE4 }
         - button:
             id: btn_play
             align: CENTER
@@ -239,7 +240,7 @@ lvgl:
                   action: media_player.media_play_pause
                   data: { entity_id: "${player_entity}" }
             widgets:
-              - label: { id: lbl_play, align: CENTER, text: "", text_font: montserrat_28, text_color: 0x06201C }
+              - label: { id: lbl_play, align: CENTER, text: "", text_font: montserrat_28, text_color: 0x06201C }
         - button:
             id: btn_next
             align: CENTER
@@ -254,9 +255,9 @@ lvgl:
             on_click:
               - homeassistant.action:
                   action: media_player.media_next_track
-                  data: { entity_id: "${player_entity}" }
+                  data: { entity_id: "${player_info_entity}" }
             widgets:
-              - label: { align: CENTER, text: "", text_font: montserrat_22, text_color: 0xCFEAE4 }
+              - label: { align: CENTER, text: "", text_font: montserrat_22, text_color: 0xCFEAE4 }
         # Time + progress bar
         - label:
             id: lbl_time
