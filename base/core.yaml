@@ -273,6 +273,8 @@ psram:
 
 logger:
   level: INFO   # less logging = less overhead (DEBUG was very noisy, esp. during VA)
+  logs:
+    debug: DEBUG
 
 api:
 
