@@ -238,7 +238,7 @@ lvgl:
             on_click:
               - homeassistant.action:
                   action: media_player.media_play_pause
-                  data: { entity_id: "${player_entity}" }
+                  data: { entity_id: "${player_info_entity}" }
             widgets:
               - label: { id: lbl_play, align: CENTER, text: "", text_font: montserrat_28, text_color: 0x06201C }
         - button:
