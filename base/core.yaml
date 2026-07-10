@@ -2644,9 +2644,19 @@ interval:
                 id: lbl_date
                 text: !lambda |-
                   auto t = id(ha_time).now();
-                  static const char* d[8] = {"","Su","Mo","Tu","We","Th","Fr","Sa"};
+                  static const char* d[8] = {"","Ne","Po","Út","St","Čt","Pá","So"};
                   std::string day = (t.day_of_week >= 1 && t.day_of_week <= 7) ? std::string(d[t.day_of_week]) : std::string("");
-                  return t.strftime("%d.%m") + "  " + day;
+                  char b[8];
+                  snprintf(b, sizeof(b), "%d.%d.", t.day_of_month, t.month);
+                  return std::string(b) + " " + day;                
+            # ORIG. ENG VERSION BELOW
+            #- lvgl.label.update:
+            #    id: lbl_date
+            #    text: !lambda |-
+            #      auto t = id(ha_time).now();
+            #      static const char* d[8] = {"","Su","Mo","Tu","We","Th","Fr","Sa"};
+            #      std::string day = (t.day_of_week >= 1 && t.day_of_week <= 7) ? std::string(d[t.day_of_week]) : std::string("");
+            #      return t.strftime("%d.%m") + "  " + day;
       # Screen-timer countdown (g_timer_active). From the button: local. From VA: HA calls finished, locally smooth.
       - if:
           condition:
