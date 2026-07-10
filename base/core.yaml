@@ -1442,7 +1442,7 @@ script:
 sensor:
   - platform: homeassistant
     id: vol_sensor
-    entity_id: ${player_entity}
+    entity_id: ${player_info_entity}
     attribute: volume_level
     on_value:
       - lambda: 'id(g_vol) = x;'
