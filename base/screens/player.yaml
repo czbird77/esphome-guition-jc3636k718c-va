@@ -20,6 +20,14 @@ globals:
     type: int
     restore_value: no
     initial_value: '0'
+  - id: g_media_title
+    type: std::string
+    restore_value: no
+    initial_value: '""'
+  - id: g_media_cid
+    type: std::string
+    restore_value: no
+    initial_value: '""'    
 
 # Required by online_image (fetching album art over HTTP)
 http_request:
@@ -62,9 +70,15 @@ text_sensor:
     entity_id: ${player_entity}
     attribute: media_title
     on_value:
-      - lvgl.label.update:
-          id: lbl_title
-          text: !lambda 'return x.empty() ? std::string("-") : x;'
+      - lambda: 'id(g_media_title) = x;'
+      - script.execute: media_title_render
+  - platform: homeassistant
+    id: media_cid
+    entity_id: ${player_entity}
+    attribute: media_content_id
+    on_value:
+      - lambda: 'id(g_media_cid) = x;'
+      - script.execute: media_title_render      
   - platform: homeassistant
     id: media_artist
     entity_id: ${player_entity}
@@ -262,4 +276,13 @@ lvgl:
             value: 0
             border_width: 0
             indicator:
-              bg_color: 0x2FE6CF
+
+script:
+  - id: media_title_render
+    then:
+      - lvgl.label.update:
+          id: lbl_title
+          text: !lambda |-
+            if (!id(g_media_title).empty()) return id(g_media_title);
+            if (!id(g_media_cid).empty()) return id(g_media_cid);
+            return std::string("-");bg_color: 0x2FE6CF
