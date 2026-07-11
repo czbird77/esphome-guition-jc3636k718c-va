@@ -340,9 +340,11 @@ speaker:
   - platform: resampler
     id: media_resampling_speaker
     output_speaker: media_mixing_input
+    sample_rate: 16000
   - platform: resampler
     id: announcement_resampling_speaker
     output_speaker: announcement_mixing_input
+    sample_rate: 16000
 
 # Player visible in HA / Music Assistant (album art etc.)
 media_player:
