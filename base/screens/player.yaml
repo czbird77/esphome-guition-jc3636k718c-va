@@ -44,6 +44,7 @@ online_image:
     buffer_size: 8192
     # Album art FIX: after download you must EXPLICITLY refresh the LVGL widget (it won't redraw itself)
     on_download_finished:
+      - lvgl.widget.show: ui_album
       - lvgl.image.update:
           id: ui_album
           src: album_art
@@ -67,6 +68,19 @@ sensor:
 
 text_sensor:
   # INFO (Music Assistant) - title/artist/obrázek/stav
+  - platform: homeassistant
+    id: media_source
+    entity_id: ${player_source_entity}
+    attribute: source
+    on_value:
+      - if:
+          condition: { lambda: 'return x != "wifi";' }
+          then:
+            # smazat media art a media info pri prepnuti pryc z wifi source
+            - lvgl.label.update: { id: lbl_title, text: "-" }
+            - lvgl.label.update: { id: lbl_artist, text: "" }
+            - lvgl.widget.hide: ui_album
+            - lambda: 'id(g_last_pic) = "";'
   - platform: homeassistant
     id: media_title
     entity_id: ${player_info_entity}
